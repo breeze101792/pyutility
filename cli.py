@@ -117,18 +117,20 @@ class CommandLineInterface:
     def __init__(self, promote="cli"):
         #### config vars ###
         self.__promote=promote + "> "
+        self.__cmd_promote=promote + "$ "
         self.__one_command_keyword=":"
 
         #### control vars ###
         self.__flag_running = True
-        # self.__flag_one_command = False
-        self.__flag_one_command = True
+        # self.__flag_one_command = True
+        self.__flag_one_command = False
 
         ### local vars ###
         self.__history_list = ['history','help', 'exit']
         self.__function_dict = dict()
         self.__auto_match = True
         self.__default_ptr = self.__default
+        self.__mode = 0
 
         ### Function Configs ###
         self.regist_cmd("exit", self.__exit, "Exit the program")
@@ -143,7 +145,9 @@ class CommandLineInterface:
 
     def __exit(self, args):
         self.print("Exit program")
-        exit()
+        self.__flag_running = False
+        return True
+        # exit()
     def __hist(self, args):
         self.print("History")
         # for each_cmd in self.__history_list:
@@ -176,17 +180,44 @@ class CommandLineInterface:
         # print("\033[%dD" % (cursor_shift_idx + trailing_space_nmu), end="", flush=True)
 
         # \033[ is csi
-        print("\033[1K\r"+self.__promote+line_buffer+trailing_space_nmu*" ", end="", flush=True)
-        print("\033[%dD" % (cursor_shift_idx + trailing_space_nmu), end="", flush=True)
+        if self.__mode == 1:
+            print("\033[1K\r"+self.__cmd_promote+line_buffer+trailing_space_nmu*" ", end="", flush=True)
+            print("\033[%dD" % (cursor_shift_idx + trailing_space_nmu), end="", flush=True)
+        else:
+            print("\033[1K\r"+self.__promote+line_buffer+trailing_space_nmu*" ", end="", flush=True)
+            print("\033[%dD" % (cursor_shift_idx + trailing_space_nmu), end="", flush=True)
+
+    @property
+    def one_command(self):
+        return self.__flag_one_command
+    @one_command.setter
+    def one_command(self,val):
+        self.__flag_one_command = val
 
     def regist_cmd(self, key_word, func_ptr, description="", arg_list=None):
         self.__function_dict[key_word] = CommandInstance(key_word=key_word, func_ptr=func_ptr, description=description, arg_list=arg_list)
     def regist_default_cmd(self, func_ptr):
         self.__default_ptr = func_ptr
 
-    def run_once(self, line_args):
+    def run_once_def(self, line_args):
         func_ret = False
         if len(line_args) == 0:
+            return True
+        line_buffer=line_args
+
+        arg_dict = ArgParser.args_parser(line_buffer)
+        # get key only
+        first_key = list(arg_dict.keys())[0]
+        cmd_token = arg_dict[first_key]
+
+        dbg_debug("Def Cmd: ", line_buffer)
+
+        func_ret = self.__default_ptr(arg_dict)
+        return func_ret
+    def run_once_cmd(self, line_args):
+        func_ret = False
+        if len(line_args) == 0:
+            dbg_warning("args is empty: ", line_buffer)
             return True
         line_buffer=line_args
 
@@ -211,24 +242,81 @@ class CommandLineInterface:
 
                 return func_ret
 
-        func_ret = self.__default_ptr(arg_dict)
+        # func_ret = self.__default_ptr(arg_dict)
         return func_ret
+    def run_once(self, line_args):
+        dbg_error("Exception: ")
+        func_ret = self.run_once_cmd(line_args)
+        if func_ret is False:
+            return self.run_once_def(line_args)
+
+        # func_ret = False
+        # if len(line_args) == 0:
+        #     return True
+        # line_buffer=line_args
+
+        # arg_dict = ArgParser.args_parser(line_buffer)
+        # # get key only
+        # first_key = list(arg_dict.keys())[0]
+        # cmd_token = arg_dict[first_key]
+
+        # dbg_debug("Cmd: ", line_buffer)
+        # for each_key in self.__function_dict.keys():
+        #     if each_key == cmd_token or \
+        #             (self.__auto_match is True and len(cmd_token) >= 4 and cmd_token[:4] == each_key[:4]):
+        #         try:
+        #             func_ret = self.__function_dict[each_key].func_ptr(arg_dict)
+        #         except Exception as e:
+
+        #             dbg_error("Cmd: ", line_buffer)
+        #             dbg_error("Exception: ", e)
+
+        #             traceback_output = traceback.format_exc()
+        #             dbg_error(traceback_output)
+
+        #         return func_ret
+
+        # func_ret = self.__default_ptr(arg_dict)
+        # return func_ret
     def run(self):
         func_ret = None
         while self.__flag_running == True:
-            line_buffer=self.get_line()
-            cmd_token=line_buffer.split(' ')
+            try:
+                line_buffer=self.get_line()
+                cmd_token=line_buffer.split(' ')
 
-            if self.__flag_one_command is True and cmd_token[0] == self.__one_command_keyword:
-                # dbg_debug('line_buffer->' , line_buffer)
-                # real_cmd_idx=line_buffer.index(' ') + 1 if len(cmd_token) > 1 else 0
-                real_cmd_idx= 1 if len(cmd_token) > 1 else 0
+                if self.__mode == 1:
+                    # if cmd_token[0][0] == self.__one_command_keyword:
+                    if len(line_buffer) != 0:
+                        dbg_info('One Command Mode')
+                        # dbg_debug('line_buffer->' , line_buffer)
+                        # real_cmd_idx=line_buffer.index(' ') + 1 if len(cmd_token) > 1 else 0
+                        # real_cmd_idx= 1 if len(cmd_token) > 1 else 0
+                        # dbg_info('real_cmd_idx=', real_cmd_idx)
 
-                if len(line_buffer) > real_cmd_idx and real_cmd_idx != 0:
-                    line_buffer = line_buffer[line_buffer.index(' ') + 1:]
-            func_ret = self.run_once(line_buffer)
-            if func_ret is not True:
-                self.print('Fail to excute command. Return:', func_ret)
+                        # if len(line_buffer) > real_cmd_idx and real_cmd_idx != 0:
+                        #     line_buffer = line_buffer[line_buffer.index(' ') + 1:]
+                        func_ret = self.run_once_cmd(line_buffer)
+                    else:
+                        # dbg_debug('line_buffer->' , line_buffer)
+                        func_ret = self.run_once_def(line_buffer)
+                # elif self.__flag_one_command is True:
+                #     func_ret = self.run_once(line_buffer)
+                else:
+                    if self.__flag_one_command is True:
+                        func_ret = self.run_once_def(line_buffer)
+                    else:
+                        func_ret = self.run_once_cmd(line_buffer)
+
+                if func_ret is not True:
+                    self.print('Fail to excute command. Return:', func_ret)
+            except Exception as e:
+                dbg_error("Cmd: ", line_buffer)
+                dbg_error("Exception: ", e)
+
+                traceback_output = traceback.format_exc()
+                dbg_error(traceback_output)
+
     def __auto_complete(self, line_buffer):
         candict_list = list()
         # print('\n__auto_complete')
@@ -266,6 +354,7 @@ class CommandLineInterface:
         return candict_list
 
     def get_line(self):
+        self.__mode=0
         ckey_timestatmp=time.time()
         pkey_timestatmp=time.time()
         key_timeout=50.0
@@ -299,13 +388,16 @@ class CommandLineInterface:
                 if esc_dectect is True:
                     dbg_trace("Double Esc Key")
                     esc_dectect=False
+                    self.__mode = 0
                 else:
                     esc_dectect=True
                 # dbg_debug("Esc Key")
                 continue
             elif key_press == chr(0x04):
                 # ctrl + d
+                line_buffer=""
                 self.__exit(None)
+                break
             elif key_press == chr(0x0c):
                 # ctrl + l
                 self.__cls()
@@ -355,6 +447,12 @@ class CommandLineInterface:
                 elif len(candict_list) > 1:
                     print('\n', candict_list)
 
+                self.__print_line_buffer(line_buffer, buffer_cusor_idx)
+                continue
+            # elif key_press.encode("ascii") == b':':
+            elif key_press == ':':
+                # dbg_info(': Dectect')
+                self.__mode = 1
                 self.__print_line_buffer(line_buffer, buffer_cusor_idx)
                 continue
             # elif key_press.encode("ascii") == b'\x1f':
@@ -438,6 +536,7 @@ class CommandLineInterface:
             if key_press in ("\r", "\n"):
                 # print("Enter")
                 print("\n", end='', flush=True)
+                # self.__mode = 0
                 break
             else:
                 # update buffer
@@ -453,7 +552,7 @@ class CommandLineInterface:
                 continue
         self.__history_list.append(line_buffer)
         # self.print(self.__history_list)
-        # self.print(self.line_buffer)
+        dbg_debug('line_buffer-'+line_buffer+'-')
         return line_buffer
 
 def args_test_function(args):
@@ -470,6 +569,7 @@ def args_test_function(args):
     return True
 
 if __name__ == '__main__':
+
     debug_level=DebugLevel.MAX
     test_cli = CommandLineInterface()
     test_cli.regist_cmd("test", args_test_function, description="test function for args", arg_list=['project', 'task', 'name', 'description']  )
