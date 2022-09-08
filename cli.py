@@ -217,7 +217,7 @@ class CommandLineInterface:
     def run_once_cmd(self, line_args):
         func_ret = False
         if len(line_args) == 0:
-            dbg_warning("args is empty: ", line_buffer)
+            dbg_warning("args is empty: ", line_args)
             return True
         line_buffer=line_args
 
