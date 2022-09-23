@@ -15,9 +15,9 @@ class Log:
 
         dbg_debug('open file: ', self.__open_name)
         try:
-            self.__log_fd = open(self.__open_name, "w")
-            self.__log_fd.write('Record Start: ' + now.strftime('%Y-%m-%d %H:%M:%S').__str__() + '\n')
-            self.__log_fd.write('================================================================\n')
+            self.__log_fd = open(self.__open_name, "wb")
+            self.__log_fd.write(('Record Start: ' + now.strftime('%Y-%m-%d %H:%M:%S').__str__() + '\n').encode())
+            self.__log_fd.write('================================================================\n'.encode())
 
             # self.__log_fd.write("Now the file has more content!")
         except IOError:
@@ -31,19 +31,19 @@ class Log:
             dbg_error('File not opened')
         else:
             now = datetime.datetime.now()
-            self.__log_fd.write('\n================================================================\n')
-            self.__log_fd.write('Record End: ' + now.strftime('%Y-%m-%d %H:%M:%S').__str__() + '\n')
+            self.__log_fd.write('\n================================================================\n'.encode())
+            self.__log_fd.write(('Record End: ' + now.strftime('%Y-%m-%d %H:%M:%S').__str__() + '\n').encode())
             self.__log_fd.close()
             self.__log_fd = None
 
-    def write(self, bufbyte):
-        dbg_debug('Write: ', bufbyte)
+    def write(self, bufferbyte):
+        dbg_debug('Write: ', bufferbyte)
         # Accept only byte
         if self.__log_fd is None:
             dbg_error('File not opened')
             return
         try:
-            self.__log_fd.write(bufbyte)
+            self.__log_fd.write(bufferbyte)
         except IOError:
             dbg_error('File write error')
     def isFileOpened(self):
