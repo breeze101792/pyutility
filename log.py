@@ -1,17 +1,29 @@
-from utility.debug import *
 import datetime
+import os
+
+from utility.debug import *
+
 class Log:
     def __init__(self):
         dbg_debug('Console init')
         self.__log_fd = None
         self.__open_name = None
 
+        if os.name == 'nt':
+            self.sep = '\\'
+        else:
+            self.sep = '/'
+
     def __del__(self):
         self.close()
-    def open(self, path_name='./terminal'):
+    def open(self, log_file_name='./terminal', path='./log'):
         now = datetime.datetime.now()
         timestamp = now.strftime('%Y%m%d_%H%M%S')
-        self.__open_name = path_name + '_' + timestamp + '.log'
+
+        if os.path.exists(path) is not True:
+            os.mkdir(path)
+
+        self.__open_name = path + self.sep + log_file_name + '_' + timestamp + '.log'
 
         dbg_debug('open file: ', self.__open_name)
         try:
