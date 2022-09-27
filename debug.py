@@ -133,7 +133,7 @@ def dbgprint(*args):
 
     caller_filename = os.path.splitext(os.path.basename(caller_frame.filename))[0]
     caller_function = caller_frame.function
+    caller_line_no = caller_frame.lineno
 
-    # print("[{}]".format(timestamp) + "".join(map(str,args)))
-    print("[{}][{}][{}]".format(timestamp, caller_filename, caller_function) + "".join(map(str,args)))
+    print("[{}][{}][{}][{}]".format(timestamp, caller_filename, caller_function, caller_line_no) + "".join(map(str,args)))
 
