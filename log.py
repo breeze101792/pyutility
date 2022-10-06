@@ -8,6 +8,9 @@ class Log:
         dbg_debug('Console init')
         self.__log_fd = None
         self.__open_name = None
+        self.buffer_size = 0
+        # flush size with 100K
+        self.flush_size = 100 * 1024
 
         if os.name == 'nt':
             self.sep = '\\'
@@ -16,7 +19,7 @@ class Log:
 
     def __del__(self):
         self.close()
-    def open(self, log_file_name='./terminal', path='./log'):
+    def open(self, log_file_name='terminal', path='log'):
         now = datetime.datetime.now()
         timestamp = now.strftime('%Y%m%d_%H%M%S')
 
@@ -56,6 +59,11 @@ class Log:
             return
         try:
             self.__log_fd.write(bufferbyte)
+            self.buffer_size += len(bufferbyte)
+            if self.buffer_size > self.flush_size:
+                dbg_debug('File write flush')
+                self.__log_fd.flush()
+                self.buffer_size = 0
         except IOError:
             dbg_error('File write error')
     def isFileOpened(self):
