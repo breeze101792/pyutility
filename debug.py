@@ -58,6 +58,7 @@ class DebugSetting(object):
         arg_dict = args
         arg_key = list(arg_dict.keys())
         if 'arg_1' not in arg_key:
+            dbg_error('Not args found. log key: ' + arg_key)
             DebugSetting.dbg_show()
             return True
 
@@ -69,6 +70,21 @@ class DebugSetting(object):
             DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR
         elif "develoment" == loglevel:
             DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.DEBUG | DebugLevel.INFOMATION
+
+        elif "Disable"    == loglevel:
+            DebugSetting.debug_level = DebugLevel.DISABLE
+        elif "Critical"   == loglevel:
+            DebugSetting.debug_level = DebugLevel.CRITICAL
+        elif "Error"      == loglevel:
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR
+        elif "Warning"    == loglevel:
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING
+        elif "Infomation" == loglevel:
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFOMATION
+        elif "Debug"      == loglevel:
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFOMATION | DebugLevel.DEBUG
+        elif "Trace"      == loglevel:
+            DebugSetting.debug_level = DebugLevel.TRACE
 
         elif "disable"    == loglevel:
             DebugSetting.debug_level = DebugLevel.DISABLE
