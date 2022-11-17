@@ -42,6 +42,7 @@ class RetValue:
 class DebugSetting(object):
 
     debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR
+    debug_tag = "Disable"
 
     # @property
     # def debug_level(self):
@@ -53,6 +54,53 @@ class DebugSetting(object):
     #     print('set debug_level')
     #     type(self)._debug_level = val
     @staticmethod
+    def setDbgLevel(dbg_level):
+        dbg_info(dbg_level)
+
+        if "all"    == dbg_level:
+            DebugSetting.debug_level = DebugLevel.MAX
+        elif "default" == dbg_level:
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR
+        elif "develoment" == dbg_level:
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.DEBUG | DebugLevel.INFOMATION
+
+        elif "Disable"    == dbg_level:
+            DebugSetting.debug_level = DebugLevel.DISABLE
+        elif "Critical"   == dbg_level:
+            DebugSetting.debug_level = DebugLevel.CRITICAL
+        elif "Error"      == dbg_level:
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR
+        elif "Warning"    == dbg_level:
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING
+        elif "Infomation" == dbg_level:
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFOMATION
+        elif "Debug"      == dbg_level:
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFOMATION | DebugLevel.DEBUG
+        elif "Trace"      == dbg_level:
+            DebugSetting.debug_level = DebugLevel.TRACE
+
+        elif "disable"    == dbg_level:
+            DebugSetting.debug_level = DebugLevel.DISABLE
+        elif "critical"   == dbg_level:
+            DebugSetting.debug_level |= DebugLevel.CRITICAL
+        elif "error"      == dbg_level:
+            DebugSetting.debug_level |= DebugLevel.ERROR
+        elif "warning"    == dbg_level:
+            DebugSetting.debug_level |= DebugLevel.WARNING
+        elif "infomation" == dbg_level:
+            DebugSetting.debug_level |= DebugLevel.INFOMATION
+        elif "debug"      == dbg_level:
+            DebugSetting.debug_level |= DebugLevel.DEBUG
+        elif "trace"      == dbg_level:
+            DebugSetting.debug_level |= DebugLevel.TRACE
+        else:
+            dbg_error('Wrong log level: ' + dbg_level)
+            return False
+
+        DebugSetting.debug_tag = dbg_level
+        # print('Debug level:', DebugSetting.debug_level)
+        return True
+    @staticmethod
     def debuglevel(args):
         dbg_info(args)
         arg_dict = args
@@ -62,52 +110,16 @@ class DebugSetting(object):
             DebugSetting.dbg_show()
             return True
 
-        loglevel = arg_dict['arg_1']
-
-        if "all"    == loglevel:
-            DebugSetting.debug_level = DebugLevel.MAX
-        elif "default" == loglevel:
-            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR
-        elif "develoment" == loglevel:
-            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.DEBUG | DebugLevel.INFOMATION
-
-        elif "Disable"    == loglevel:
-            DebugSetting.debug_level = DebugLevel.DISABLE
-        elif "Critical"   == loglevel:
-            DebugSetting.debug_level = DebugLevel.CRITICAL
-        elif "Error"      == loglevel:
-            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR
-        elif "Warning"    == loglevel:
-            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING
-        elif "Infomation" == loglevel:
-            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFOMATION
-        elif "Debug"      == loglevel:
-            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFOMATION | DebugLevel.DEBUG
-        elif "Trace"      == loglevel:
-            DebugSetting.debug_level = DebugLevel.TRACE
-
-        elif "disable"    == loglevel:
-            DebugSetting.debug_level = DebugLevel.DISABLE
-        elif "critical"   == loglevel:
-            DebugSetting.debug_level |= DebugLevel.CRITICAL
-        elif "error"      == loglevel:
-            DebugSetting.debug_level |= DebugLevel.ERROR
-        elif "warning"    == loglevel:
-            DebugSetting.debug_level |= DebugLevel.WARNING
-        elif "infomation" == loglevel:
-            DebugSetting.debug_level |= DebugLevel.INFOMATION
-        elif "debug"      == loglevel:
-            DebugSetting.debug_level |= DebugLevel.DEBUG
-        elif "trace"      == loglevel:
-            DebugSetting.debug_level |= DebugLevel.TRACE
-        else:
-            dbg_error('Wrong log level: ' + loglevel)
-            return False
+        log_level = arg_dict['arg_1']
+        ret = DebugSetting.setDbgLevel(log_level)
 
         # print('Debug level:', DebugSetting.debug_level)
         DebugSetting.dbg_show()
         return True
 
+    @staticmethod
+    def getDbgTag():
+        return DebugSetting.debug_tag
     @staticmethod
     def dbg_show():
         dbg_trace('trace')
