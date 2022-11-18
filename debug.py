@@ -137,24 +137,26 @@ class DebugSetting(object):
 # DebugSetting.debug_level = DebugLevel.MAX
 def dbg_trace(*args):
     if DebugSetting.debug_level & DebugLevel.DEBUG > 0:
-        dbgprint(Bcolors.TRACE, "[TRC] ", *args, Bcolors.ENDC)
+        dbg_print(Bcolors.TRACE, "[TRC] ", *args, Bcolors.ENDC)
 def dbg_debug(*args):
     if DebugSetting.debug_level & DebugLevel.DEBUG > 0:
-        dbgprint(Bcolors.ENDC, "[DBG] ", *args, Bcolors.ENDC)
+        dbg_print(Bcolors.ENDC, "[DBG] ", *args, Bcolors.ENDC)
 def dbg_info(*args):
     if DebugSetting.debug_level & DebugLevel.INFOMATION > 0:
-        dbgprint(Bcolors.OKGREEN, "[INF] ", *args, Bcolors.ENDC)
+        dbg_print(Bcolors.OKGREEN, "[INF] ", *args, Bcolors.ENDC)
 def dbg_warning(*args):
     if DebugSetting.debug_level & DebugLevel.WARNING > 0:
-        dbgprint(Bcolors.WARNING, "[WARN] ", *args, Bcolors.ENDC)
+        dbg_print(Bcolors.WARNING, "[WARN] ", *args, Bcolors.ENDC)
 def dbg_error(*args):
     if DebugSetting.debug_level & DebugLevel.ERROR > 0:
-        dbgprint(Bcolors.ERROR, "[ERR] ", *args, Bcolors.ENDC)
+        dbg_print(Bcolors.ERROR, "[ERR] ", *args, Bcolors.ENDC)
 def dbg_critical(*args):
     if DebugSetting.debug_level & DebugLevel.CRITICAL > 0:
-        dbgprint(Bcolors.BOLD, Bcolors.CRITICAL, "[CRIT] ", *args, Bcolors.ENDC)
+        dbg_print(Bcolors.BOLD, Bcolors.CRITICAL, "[CRIT] ", *args, Bcolors.ENDC)
 
 def dbgprint(*args):
+    dbg_print(*args)
+def dbg_print(*args):
     # print('Debug level:', DebugSetting.debug_level)
     timestamp = strftime("%d-%H:%M", gmtime())
     caller_frame = inspect.stack()[2]
