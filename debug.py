@@ -87,7 +87,7 @@ class DebugSetting(object):
             DebugSetting.debug_level |= DebugLevel.ERROR
         elif "warning"    == dbg_level:
             DebugSetting.debug_level |= DebugLevel.WARNING
-        elif "infomation" == dbg_level:
+        elif "information" == dbg_level:
             DebugSetting.debug_level |= DebugLevel.INFOMATION
         elif "debug"      == dbg_level:
             DebugSetting.debug_level |= DebugLevel.DEBUG
