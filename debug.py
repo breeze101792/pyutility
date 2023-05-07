@@ -72,7 +72,7 @@ class DebugSetting(object):
             DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR
         elif "Warning"    == dbg_level:
             DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING
-        elif "Infomation" == dbg_level:
+        elif "Information" == dbg_level:
             DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFOMATION
         elif "Debug"      == dbg_level:
             DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFOMATION | DebugLevel.DEBUG
