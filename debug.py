@@ -41,8 +41,8 @@ class RetValue:
 # test funcion could sync all ins
 class DebugSetting(object):
 
-    debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR
-    debug_tag = "Disable"
+    debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING
+    debug_tag = "Warning"
 
     # @property
     # def debug_level(self):
