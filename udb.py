@@ -31,6 +31,10 @@ class uDatabase:
         self.__db_lock = False
         return True
 
+    def setup_tables(self):
+        # NOTE. Impl your table here.
+        return True
+
     def setup(self):
         query_str = """
                     SELECT name FROM sqlite_schema
@@ -41,17 +45,6 @@ class uDatabase:
         if not os.path.isfile(self.__db_path) or len(table_list) == 0:
             dbg_info("Initiialize database")
 
-             # c.execute('''CREATE TABLE PROJECT
-             #              (PID TEXT, Name CHAR(255), Description VARCHAR , StartDate date)''')
-
-            # Create table
-            # query_str='''CREATE TABLE UDB (
-            #                 ID INTEGER AUTO_INCREMENT,
-            #                 Operation TEXT,
-            #                 Description VARCHAR,
-            #                 Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            #                 )
-            #           '''
             query_str='''CREATE TABLE UDB (
                             ID INTEGER PRIMARY KEY AUTOINCREMENT,
                             Operation TEXT,
@@ -66,7 +59,9 @@ class uDatabase:
             query_str = "INSERT INTO UDB (Operation, Description) VALUES ('%s', '%s')" % ("Setup Database", "Create Database, and setup up udb table.")
             self.execute(query_str)
 
+            self.setup_tables()
 
+            self.commit()
         return True
     def connect(self):
         dbg_trace("Connect to database")
@@ -136,26 +131,19 @@ class uDatabase:
                     SELECT name FROM sqlite_schema
                     WHERE type ='table' AND name NOT LIKE 'sqlite_%';
                     """
-        # dbg_debug(query_str)
-
         table_list = self.execute(query_str)
         dbg_info(table_list)
-
-
         return table_list
     def dump_table(self, table, cnt=10):
         query_str = "SELECT * from %s;" % table
-        # query_str = "PRAGMA table_info(%s);" % table
-        # query_str = ".schema tablename"
-        # dbg_debug(query_str)
         data_list = self.execute(query_str)
         dbg_info(data_list)
-
         return data_list
     def dump_all(self, cnt=10):
         table_list = self.dump_db()
         for each_table in table_list:
             self.dump_table(each_table)
+
     # def example(self):
     #     query_str = "SELECT times, familiar FROM WORD WHERE word == '%s'" % word
     #     query_str = "%s WHERE times == %i AND familiar == %i" % (query_str, times, familiar)
