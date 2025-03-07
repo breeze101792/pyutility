@@ -114,13 +114,14 @@ class uDatabase:
                 result = result.fetchall()
             dbg_debug(result)
         except Exception as e:
+            self.__unlock()
 
             dbg_error("Query String: ", query_str)
-            dbg_error("Exception: ", e)
-
-            traceback_output = traceback.format_exc()
-            dbg_error(traceback_output)
-
+            # dbg_error("Exception: ", e)
+            #
+            # traceback_output = traceback.format_exc()
+            # dbg_error(traceback_output)
+            raise
 
         self.__unlock()
         return result
