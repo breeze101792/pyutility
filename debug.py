@@ -1,5 +1,6 @@
 from time import gmtime, strftime
 # import threading
+from datetime import datetime
 import inspect
 import os
 
@@ -31,7 +32,8 @@ class DebugLevel:
     WARNING    = 0x4
     INFOMATION = 0x8
     DEBUG      = 0x10
-    TRACE      = 0x10
+    TRACE      = 0x20
+    LOG        = 0x40
     MAX        = 0xff
 
 class RetValue:
@@ -41,6 +43,7 @@ class RetValue:
 # test funcion could sync all ins
 class DebugSetting(object):
 
+    log_path = "./log"
     debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING
     debug_tag = "Warning"
 
@@ -53,6 +56,10 @@ class DebugSetting(object):
     # def debug_level(self,val):
     #     print('set debug_level')
     #     type(self)._debug_level = val
+    @staticmethod
+    def setDbgPath(log_path):
+        self.log_path = log_path
+
     @staticmethod
     def setDbgLevel(dbg_level):
         dbg_info(dbg_level)
@@ -135,28 +142,37 @@ class DebugSetting(object):
 # TODO REMOVE this var
 # DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.INFOMATION
 # DebugSetting.debug_level = DebugLevel.MAX
+def dbg_log(*args):
+    dbg_print(Bcolors.OKGREEN, "[LOG] ", *args, Bcolors.ENDC, log_file='journal.log', show=DebugSetting.debug_level & DebugLevel.LOG > 0)
 def dbg_trace(*args):
-    if DebugSetting.debug_level & DebugLevel.DEBUG > 0:
-        dbg_print(Bcolors.TRACE, "[TRC] ", *args, Bcolors.ENDC)
+    if DebugSetting.debug_level & DebugLevel.TRACE > 0:
+        dbg_print(Bcolors.TRACE, "[TRC] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.TRACE > 0)
 def dbg_debug(*args):
     if DebugSetting.debug_level & DebugLevel.DEBUG > 0:
-        dbg_print(Bcolors.ENDC, "[DBG] ", *args, Bcolors.ENDC)
+        dbg_print(Bcolors.ENDC, "[DBG] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.DEBUG > 0)
 def dbg_info(*args):
     if DebugSetting.debug_level & DebugLevel.INFOMATION > 0:
-        dbg_print(Bcolors.OKGREEN, "[INF] ", *args, Bcolors.ENDC)
+        dbg_print(Bcolors.OKGREEN, "[INF] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.INFOMATION > 0)
 def dbg_warning(*args):
     if DebugSetting.debug_level & DebugLevel.WARNING > 0:
-        dbg_print(Bcolors.WARNING, "[WARN] ", *args, Bcolors.ENDC)
+        dbg_print(Bcolors.WARNING, "[WARN] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.WARNING > 0)
 def dbg_error(*args):
     if DebugSetting.debug_level & DebugLevel.ERROR > 0:
-        dbg_print(Bcolors.ERROR, "[ERR] ", *args, Bcolors.ENDC)
+        dbg_print(Bcolors.ERROR, "[ERR] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.ERROR > 0)
 def dbg_critical(*args):
     if DebugSetting.debug_level & DebugLevel.CRITICAL > 0:
-        dbg_print(Bcolors.BOLD, Bcolors.CRITICAL, "[CRIT] ", *args, Bcolors.ENDC)
+        dbg_print(Bcolors.BOLD, Bcolors.CRITICAL, "[CRIT] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.CRITICAL > 0)
 
 def dbgprint(*args):
     dbg_print(*args)
-def dbg_print(*args):
+def dbg_print(*args, log_file="./debug.log", show=True, **kwargs):
+    """
+    Custom print function that prints to the console and writes to a log file.
+
+    :param args: The values to print.
+    :param log_file: The file to write the logs to (default: "log.txt").
+    :param kwargs: Additional keyword arguments for the built-in print function.
+    """
     # print('Debug level:', DebugSetting.debug_level)
     timestamp = strftime("%d-%H:%M", gmtime())
     caller_frame = inspect.stack()[2]
@@ -165,5 +181,21 @@ def dbg_print(*args):
     caller_function = caller_frame.function
     caller_line_no = caller_frame.lineno
 
-    print("[{}][{}][{}][{}]".format(timestamp, caller_filename, caller_function, caller_line_no) + "".join(map(str,args)))
+    message = "[{}][{}][{}][{}]".format(timestamp, caller_filename, caller_function, caller_line_no) + "".join(map(str,args))
 
+    if show is True:
+        # Print to console
+        print(message, **kwargs)
+
+    if log_file is not None and DebugSetting.log_path is not None:
+        # Get current date for subfolder organization
+        date_str = datetime.now().strftime("%Y%m%d")
+
+        # Ensure the parent directory exists
+        log_dir = os.path.join(DebugSetting.log_path, date_str)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+
+        # Append to log file
+        with open(log_dir + '/' + log_file, "a", encoding="utf-8") as f:
+            f.write(message + "\n")
