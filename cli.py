@@ -146,6 +146,7 @@ class CommandLineInterface:
         self.regist_cmd("help", self.__help, "Print help")
         self.regist_cmd("history", self.__hist, "Print history")
         self.regist_cmd("debug", self.__debug, "Setting debug level", arg_list=["all", 'default', 'develoment', "disable", "critical", "error", "warning", "infomation", "debug", "trace", "max"])
+        self.regist_cmd("reg_table", self.__reg_table, "Dump registered command table.")
 
     def __debug(self, args):
         if args['#'] == 1:
@@ -171,20 +172,32 @@ class CommandLineInterface:
         self.print("Exit program")
         self.__flag_running = False
         return True
-        # exit()
     def __hist(self, args):
         self.print("History")
-        # for each_cmd in self.__history_list:
-        #     self.print(" " + each_cmd)
         for each_idx in range(0, len(self.__history_list)):
             self.print("% 4d. %s" % (each_idx,  self.__history_list[each_idx]))
         return True
 
     def __help(self, args):
         self.print("Help")
-        # print("   under construction")
+        max_len = 8
         for each_key in self.__function_dict.keys():
-            self.print("  %- 8s: %s" % (each_key, self.__function_dict[each_key].description))
+            if len(each_key) + 2 > max_len:
+                max_len = len(each_key) + 2
+
+        for each_key in self.__function_dict.keys():
+            self.print(f"  %- {max_len}s: %s" % (each_key, self.__function_dict[each_key].description))
+        return True
+
+    def __reg_table(self, args):
+        self.print("Register Table:")
+        max_len = 8
+        for each_key in self.__function_dict.keys():
+            if len(each_key) + 2 > max_len:
+                max_len = len(each_key) + 2
+
+        for each_key in self.__function_dict.keys():
+            self.print(f"  %- {max_len}s: %s" % (each_key, self.__function_dict[each_key].func_ptr.__str__()))
         return True
 
     @staticmethod
@@ -202,10 +215,6 @@ class CommandLineInterface:
     def __print_line_buffer(self, line_buffer, cursor_shift_idx):
         columns, rows = os.get_terminal_size(0)
         trailing_space_nmu=columns - len("\r"+self.__promote+line_buffer)
-
-        # print to clean
-        # print("\r"+self.__promote+line_buffer+trailing_space_nmu*" ", end="", flush=True)
-        # print("\033[%dD" % (cursor_shift_idx + trailing_space_nmu), end="", flush=True)
 
         # \033[ is csi
         if self.__mode == 1:
@@ -257,8 +266,9 @@ class CommandLineInterface:
         dbg_debug("Cmd: ", line_buffer)
         for each_key in self.__function_dict.keys():
             if each_key == cmd_token or \
-                    (self.__auto_match is True and len(cmd_token) >= 4 and cmd_token[:4] == each_key[:4]):
+                    (self.__auto_match is True and len(cmd_token) >= 3 and len(each_key) >= len(cmd_token) and cmd_token == each_key[:len(cmd_token)]):
                 try:
+                    dbg_trace(f"Key:{{each_key}}, func_ptr: {self.__function_dict[each_key].func_ptr.__str__()}")
                     func_ret = self.__function_dict[each_key].func_ptr(arg_dict)
                 except Exception as e:
 
@@ -267,9 +277,9 @@ class CommandLineInterface:
 
                     traceback_output = traceback.format_exc()
                     dbg_error(traceback_output)
-
                 return func_ret
 
+        dbg_error("Cmd not found. ", line_buffer)
         # func_ret = self.__default_ptr(arg_dict)
         return func_ret
     def run_once(self, line_args):
@@ -289,19 +299,10 @@ class CommandLineInterface:
                     # if cmd_token[0][0] == self.__one_command_keyword:
                     if len(line_buffer) != 0:
                         dbg_info('One Command Mode')
-                        # dbg_debug('line_buffer->' , line_buffer)
-                        # real_cmd_idx=line_buffer.index(' ') + 1 if len(cmd_token) > 1 else 0
-                        # real_cmd_idx= 1 if len(cmd_token) > 1 else 0
-                        # dbg_info('real_cmd_idx=', real_cmd_idx)
-
-                        # if len(line_buffer) > real_cmd_idx and real_cmd_idx != 0:
-                        #     line_buffer = line_buffer[line_buffer.index(' ') + 1:]
                         func_ret = self.run_once_cmd(line_buffer)
                     else:
                         # dbg_debug('line_buffer->' , line_buffer)
                         func_ret = self.run_once_def(line_buffer)
-                # elif self.__flag_one_command is True:
-                #     func_ret = self.run_once(line_buffer)
                 else:
                     if self.__flag_one_command is True:
                         func_ret = self.run_once_def(line_buffer)
@@ -542,10 +543,6 @@ class CommandLineInterface:
                 # update buffer
                 tmp_idx=len(line_buffer)-(buffer_cusor_idx)
                 line_buffer = line_buffer[:tmp_idx] + key_press + line_buffer[tmp_idx:]
-
-                # debug
-                # print("\nbuffer_idx", buffer_cusor_idx, "Buffer len", len(line_buffer), "buffer", line_buffer)
-                # print('\n{}'.format(line_buffer))
 
                 # update console
                 self.__print_line_buffer(line_buffer, buffer_cusor_idx)
