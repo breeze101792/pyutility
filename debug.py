@@ -107,22 +107,6 @@ class DebugSetting(object):
         DebugSetting.debug_tag = dbg_level
         # print('Debug level:', DebugSetting.debug_level)
         return True
-    @staticmethod
-    def debuglevel(args):
-        dbg_info(args)
-        arg_dict = args
-        arg_key = list(arg_dict.keys())
-        if 'arg_1' not in arg_key:
-            dbg_error('Not args found. log key: ' + arg_key)
-            DebugSetting.dbg_show()
-            return True
-
-        log_level = arg_dict['arg_1']
-        ret = DebugSetting.setDbgLevel(log_level)
-
-        # print('Debug level:', DebugSetting.debug_level)
-        DebugSetting.dbg_show()
-        return True
 
     @staticmethod
     def getDbgTag():

@@ -12,6 +12,7 @@ from .utils import getch
 import traceback
 
 class ArgParser:
+    CMD_ARG_PREFIX = ""
     def __init__(self, args=None):
         self.__args_dict = None
         self.__target_keys = None
@@ -58,11 +59,15 @@ class ArgParser:
     def args_parser(args):
 
         # print (args)
-        def_key_prefix='arg_'
+        # def_key_prefix='arg_'
+        def_key_prefix=ArgParser.CMD_ARG_PREFIX
+        def_key_num_arg='#'
         def_key_idx=0
         # dbg_trace(args)
         arg_dict=dict()
         pattern = re.compile(r'''((?:[^\s"']|"[^"]*"|'[^']*')+)''')
+
+        arg_cnt = -1
 
         for each_arg in pattern.split(args):
             if each_arg == '' or each_arg == " ":
@@ -74,6 +79,8 @@ class ArgParser:
             elif len(tmp_list) == 1:
                 arg_dict[def_key_prefix+def_key_idx.__str__()] = tmp_list[0].replace("'", '').replace("\"", '')
                 def_key_idx=def_key_idx+1
+            arg_cnt += 1
+        arg_dict[def_key_prefix+def_key_num_arg.__str__()] = arg_cnt
         # print(arg_dict)
         return arg_dict
 
@@ -114,6 +121,7 @@ class CommandInstance:
         self.__arg_list = val
 
 class CommandLineInterface:
+    VERBOSE = False
     def __init__(self, promote="cli"):
         #### config vars ###
         self.__promote=promote + "> "
@@ -133,14 +141,30 @@ class CommandLineInterface:
         self.__mode = 0
 
         ### Function Configs ###
+        self.regist_cmd("verbose", self.__set_verbose, "Set verbose.", arg_list=["on", "off"])
         self.regist_cmd("exit", self.__exit, "Exit the program")
         self.regist_cmd("help", self.__help, "Print help")
         self.regist_cmd("history", self.__hist, "Print history")
-        self.regist_cmd("debug", DebugSetting.debuglevel, "Setting debug level", arg_list=["all", 'default', 'develoment', "disable", "critical", "error", "warning", "infomation", "debug", "trace", "max"])
+        self.regist_cmd("debug", self.__debug, "Setting debug level", arg_list=["all", 'default', 'develoment', "disable", "critical", "error", "warning", "infomation", "debug", "trace", "max"])
+
+    def __debug(self, args):
+        if args['#'] == 1:
+            DebugSetting.setDbgLevel(args['1'])
+            DebugSetting.dbg_show()
+        return True
+    def __set_verbose(self, args):
+        if args['#'] == 1:
+            if args['1'] == 'on':
+                CommandLineInterface.VERBOSE = True
+                self.verbose("Verbose enabled.")
+                return True
+            elif args['1'] == 'on':
+                CommandLineInterface.VERBOSE = False
+                return True
+        return False
 
     def __default(self, args):
-        # self.print("Default Function")
-        self.print('Command Not found. ', args)
+        self.print("Default Function")
         return True
 
     def __exit(self, args):
@@ -163,6 +187,10 @@ class CommandLineInterface:
             self.print("  %- 8s: %s" % (each_key, self.__function_dict[each_key].description))
         return True
 
+    @staticmethod
+    def vprint(*args, end="\n"):
+        if CommandLineInterface.VERBOSE is True:
+            print("".join(map(str,args)), end=end, flush=True)
     @staticmethod
     def print(*args, end="\n"):
         print("".join(map(str,args)), end=end, flush=True)
@@ -217,7 +245,7 @@ class CommandLineInterface:
     def run_once_cmd(self, line_args):
         func_ret = False
         if len(line_args) == 0:
-            dbg_warning("args is empty: ", line_args)
+            dbg_debug("args is empty: ", line_args)
             return True
         line_buffer=line_args
 
@@ -250,34 +278,6 @@ class CommandLineInterface:
         if func_ret is False:
             return self.run_once_def(line_args)
 
-        # func_ret = False
-        # if len(line_args) == 0:
-        #     return True
-        # line_buffer=line_args
-
-        # arg_dict = ArgParser.args_parser(line_buffer)
-        # # get key only
-        # first_key = list(arg_dict.keys())[0]
-        # cmd_token = arg_dict[first_key]
-
-        # dbg_debug("Cmd: ", line_buffer)
-        # for each_key in self.__function_dict.keys():
-        #     if each_key == cmd_token or \
-        #             (self.__auto_match is True and len(cmd_token) >= 4 and cmd_token[:4] == each_key[:4]):
-        #         try:
-        #             func_ret = self.__function_dict[each_key].func_ptr(arg_dict)
-        #         except Exception as e:
-
-        #             dbg_error("Cmd: ", line_buffer)
-        #             dbg_error("Exception: ", e)
-
-        #             traceback_output = traceback.format_exc()
-        #             dbg_error(traceback_output)
-
-        #         return func_ret
-
-        # func_ret = self.__default_ptr(arg_dict)
-        # return func_ret
     def run(self):
         func_ret = None
         while self.__flag_running == True:
@@ -556,16 +556,9 @@ class CommandLineInterface:
         return line_buffer
 
 def args_test_function(args):
-    CommandLineInterface.print("cmd: ", args)
-    if  len(args) == 1:
-        dbg_info("Only one args, replace by test pattern")
-        # args = "add task project:test_project_name name:test_task_name description:'desc about task' start:today due:eow"
-        # args = "add task project:test_project_name name:test_task_name"
-        args = "add task project:test_project_name"
-    args_parser = ArgParser(args = args)
-    for each_key in args_parser.keys():
-        CommandLineInterface.print(each_key ,":", args_parser[each_key])
-
+    CommandLineInterface.print(f"cmd: {args['0']}, nargs:{args['#']}")
+    for each_arg in range(1, args['#'] + 1):
+        CommandLineInterface.print(f"arg {each_arg}: {args[each_arg.__str__()]}")
     return True
 
 if __name__ == '__main__':
