@@ -7,7 +7,7 @@ import re
 import os
 
 from .debug import *
-from .utils import getch
+from .utils import getch, save_list, load_list
 
 import traceback
 
@@ -134,11 +134,14 @@ class CommandLineInterface:
         self.__flag_one_command = False
 
         ### local vars ###
-        self.__history_list = ['history','help', 'exit']
+        self.__history_list = []
         self.__function_dict = dict()
         self.__auto_match = True
         self.__default_ptr = self.__default
         self.__mode = 0
+
+        ### path vars ###
+        self.__history_path = f"./.{promote}_history.log"
 
         ### Function Configs ###
         self.regist_cmd("verbose", self.__set_verbose, "Set verbose.", arg_list=["on", "off"])
@@ -148,57 +151,6 @@ class CommandLineInterface:
         self.regist_cmd("debug", self.__debug, "Setting debug level", arg_list=["all", 'default', 'develoment', "disable", "critical", "error", "warning", "infomation", "debug", "trace", "max"])
         self.regist_cmd("reg_table", self.__reg_table, "Dump registered command table.")
 
-    def __debug(self, args):
-        if args['#'] == 1:
-            DebugSetting.setDbgLevel(args['1'])
-            DebugSetting.dbg_show()
-        return True
-    def __set_verbose(self, args):
-        if args['#'] == 1:
-            if args['1'] == 'on':
-                CommandLineInterface.VERBOSE = True
-                self.verbose("Verbose enabled.")
-                return True
-            elif args['1'] == 'on':
-                CommandLineInterface.VERBOSE = False
-                return True
-        return False
-
-    def __default(self, args):
-        self.print("Default Function")
-        return True
-
-    def __exit(self, args):
-        self.print("Exit program")
-        self.__flag_running = False
-        return True
-    def __hist(self, args):
-        self.print("History")
-        for each_idx in range(0, len(self.__history_list)):
-            self.print("% 4d. %s" % (each_idx,  self.__history_list[each_idx]))
-        return True
-
-    def __help(self, args):
-        self.print("Help")
-        max_len = 8
-        for each_key in self.__function_dict.keys():
-            if len(each_key) + 2 > max_len:
-                max_len = len(each_key) + 2
-
-        for each_key in self.__function_dict.keys():
-            self.print(f"  %- {max_len}s: %s" % (each_key, self.__function_dict[each_key].description))
-        return True
-
-    def __reg_table(self, args):
-        self.print("Register Table:")
-        max_len = 8
-        for each_key in self.__function_dict.keys():
-            if len(each_key) + 2 > max_len:
-                max_len = len(each_key) + 2
-
-        for each_key in self.__function_dict.keys():
-            self.print(f"  %- {max_len}s: %s" % (each_key, self.__function_dict[each_key].func_ptr.__str__()))
-        return True
 
     @staticmethod
     def vprint(*args, end="\n"):
@@ -230,6 +182,23 @@ class CommandLineInterface:
     @one_command.setter
     def one_command(self,val):
         self.__flag_one_command = val
+
+    @property
+    def history_path(self):
+        return self.__history_path
+    @history_path.setter
+    def history_path(self,val):
+        self.__history_path = val
+
+    def load_history(self):
+        if self.__history_path is not None:
+            self.__history_list = load_list(self.__history_path)
+            dbg_trace(f"Load history from {self.__history_path}.")
+
+    def save_history(self):
+        if self.__history_path is not None:
+            save_list(self.__history_list, self.__history_path)
+            dbg_trace(f"Save history to {self.__history_path}.")
 
     def regist_cmd(self, key_word, func_ptr, description="", arg_list=None):
         self.__function_dict[key_word] = CommandInstance(key_word=key_word, func_ptr=func_ptr, description=description, arg_list=arg_list)
@@ -290,6 +259,7 @@ class CommandLineInterface:
 
     def run(self):
         func_ret = None
+        self.load_history()
         while self.__flag_running == True:
             try:
                 line_buffer=self.get_line()
@@ -317,6 +287,7 @@ class CommandLineInterface:
 
                 traceback_output = traceback.format_exc()
                 dbg_error(traceback_output)
+        self.save_history()
 
     def __auto_complete(self, line_buffer):
         candict_list = list()
@@ -547,10 +518,63 @@ class CommandLineInterface:
                 # update console
                 self.__print_line_buffer(line_buffer, buffer_cusor_idx)
                 continue
-        self.__history_list.append(line_buffer)
+        # save only when it's not empty
+        if line_buffer != "":
+            self.__history_list.append(line_buffer)
         # self.print(self.__history_list)
         dbg_debug('line_buffer-'+line_buffer+'-')
         return line_buffer
+    def __debug(self, args):
+        if args['#'] == 1:
+            DebugSetting.setDbgLevel(args['1'])
+            DebugSetting.dbg_show()
+        return True
+    def __set_verbose(self, args):
+        if args['#'] == 1:
+            if args['1'] == 'on':
+                CommandLineInterface.VERBOSE = True
+                self.verbose("Verbose enabled.")
+                return True
+            elif args['1'] == 'on':
+                CommandLineInterface.VERBOSE = False
+                return True
+        return False
+
+    def __default(self, args):
+        self.print("Default Function")
+        return True
+
+    def __exit(self, args):
+        self.print("Exit program")
+        self.__flag_running = False
+        return True
+    def __hist(self, args):
+        self.print("History")
+        for each_idx in range(0, len(self.__history_list)):
+            self.print("% 4d. %s" % (each_idx,  self.__history_list[each_idx]))
+        return True
+
+    def __help(self, args):
+        self.print("Help")
+        max_len = 8
+        for each_key in self.__function_dict.keys():
+            if len(each_key) + 2 > max_len:
+                max_len = len(each_key) + 2
+
+        for each_key in self.__function_dict.keys():
+            self.print(f"  %- {max_len}s: %s" % (each_key, self.__function_dict[each_key].description))
+        return True
+
+    def __reg_table(self, args):
+        self.print("Register Table:")
+        max_len = 8
+        for each_key in self.__function_dict.keys():
+            if len(each_key) + 2 > max_len:
+                max_len = len(each_key) + 2
+
+        for each_key in self.__function_dict.keys():
+            self.print(f"  %- {max_len}s: %s" % (each_key, self.__function_dict[each_key].func_ptr.__str__()))
+        return True
 
 def args_test_function(args):
     CommandLineInterface.print(f"cmd: {args['0']}, nargs:{args['#']}")

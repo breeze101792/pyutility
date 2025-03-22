@@ -9,6 +9,23 @@ screen."""
             self.impl = _GetchWindows()
     def __call__(self): return self.impl()
 
+def save_list(data, filename):
+    """Save a list to a plain text file, one item per line."""
+    with open(filename, 'w', encoding='utf-8') as f:
+        for item in data:
+            f.write(f"{item}\n")
+    # print(f"List saved to {filename}")
+
+def load_list(filename):
+    """Load a list from a plain text file, one item per line."""
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            data = [line.strip() for line in f]
+        # print(f"List loaded from {filename}")
+        return data
+    except FileNotFoundError:
+        # print(f"File {filename} not found.")
+        return []
 
 class _GetchUnix:
     def __init__(self):
