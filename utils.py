@@ -26,6 +26,11 @@ def load_list(filename):
     except FileNotFoundError:
         # print(f"File {filename} not found.")
         return []
+def safe_format(value, width=8, precision=2, default="   N/A  "):
+    try:
+        return f"{value:>{width}.{precision}f}"
+    except (TypeError, ValueError):
+        return default
 
 class _GetchUnix:
     def __init__(self):
