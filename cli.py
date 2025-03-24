@@ -85,12 +85,13 @@ class ArgParser:
         return arg_dict
 
 class CommandInstance:
-    def __init__(self, key_word, func_ptr, description="", arg_list=None):
+    def __init__(self, key_word, func_ptr, description="", arg_list=None, group='default'):
         # key_word, func_ptr, description="", arg_list=l
         self.__key_word    = key_word
         self.__func_ptr    = func_ptr
         self.__description = description
         self.__arg_list    = arg_list
+        self.__group       = group
 
     @property
     def key_word(self):
@@ -120,9 +121,19 @@ class CommandInstance:
     def arg_list(self,val):
         self.__arg_list = val
 
+    @property
+    def group(self):
+        return self.__group
+    @group.setter
+    def group(self,val):
+        self.__group = val
+
 class CommandLineInterface:
-    VERBOSE = False
+    DEBUG_MODE = False
     def __init__(self, promote="cli"):
+        #### def vars ###
+        self.__cmd_group_hidden="hidden"
+
         #### config vars ###
         self.__promote=promote + "> "
         self.__cmd_promote=promote + "$ "
@@ -144,17 +155,18 @@ class CommandLineInterface:
         self.__history_path = f"./.{promote}_history.log"
 
         ### Function Configs ###
-        self.regist_cmd("verbose", self.__set_verbose, "Set verbose.", arg_list=["on", "off"])
         self.regist_cmd("exit", self.__exit, "Exit the program")
         self.regist_cmd("help", self.__help, "Print help")
         self.regist_cmd("history", self.__hist, "Print history")
-        self.regist_cmd("debug", self.__debug, "Setting debug level", arg_list=["all", 'default', 'develoment', "disable", "critical", "error", "warning", "infomation", "debug", "trace", "max"])
-        self.regist_cmd("reg_table", self.__reg_table, "Dump registered command table.")
+        self.regist_cmd("log", self.__log_level, "Setting log level. (all, disable, default.)", arg_list=["all", 'default', 'develoment', "disable", "critical", "error", "warning", "infomation", "debug", "trace", "max"])
 
+        # debug mode.
+        self.regist_cmd("debug", self.__set_debug_mode, "Set debug mode.(on, off)", arg_list=["on", "off"])
+        self.regist_cmd("reg_table", self.__reg_table, "Dump registered command table.", group=self.__cmd_group_hidden)
 
     @staticmethod
     def vprint(*args, end="\n"):
-        if CommandLineInterface.VERBOSE is True:
+        if CommandLineInterface.DEBUG_MODE is True:
             print("".join(map(str,args)), end=end, flush=True)
     @staticmethod
     def print(*args, end="\n"):
@@ -200,8 +212,8 @@ class CommandLineInterface:
             save_list(self.__history_list, self.__history_path)
             dbg_trace(f"Save history to {self.__history_path}.")
 
-    def regist_cmd(self, key_word, func_ptr, description="", arg_list=None):
-        self.__function_dict[key_word] = CommandInstance(key_word=key_word, func_ptr=func_ptr, description=description, arg_list=arg_list)
+    def regist_cmd(self, key_word, func_ptr, description="", arg_list=None, group="default"):
+        self.__function_dict[key_word] = CommandInstance(key_word=key_word, func_ptr=func_ptr, description=description, arg_list=arg_list, group=group)
     def regist_default_cmd(self, func_ptr):
         self.__default_ptr = func_ptr
 
@@ -524,19 +536,19 @@ class CommandLineInterface:
         # self.print(self.__history_list)
         dbg_debug('line_buffer-'+line_buffer+'-')
         return line_buffer
-    def __debug(self, args):
+    def __log_level(self, args):
         if args['#'] == 1:
             DebugSetting.setDbgLevel(args['1'])
             DebugSetting.dbg_show()
         return True
-    def __set_verbose(self, args):
+    def __set_debug_mode(self, args):
         if args['#'] == 1:
             if args['1'] == 'on':
-                CommandLineInterface.VERBOSE = True
-                self.verbose("Verbose enabled.")
+                CommandLineInterface.DEBUG_MODE = True
+                self.vprint("debug mode enabled.")
                 return True
             elif args['1'] == 'on':
-                CommandLineInterface.VERBOSE = False
+                CommandLineInterface.DEBUG_MODE = False
                 return True
         return False
 
@@ -557,12 +569,28 @@ class CommandLineInterface:
     def __help(self, args):
         self.print("Help")
         max_len = 8
+        default_group = 'default'
+        group_list = [default_group]
         for each_key in self.__function_dict.keys():
             if len(each_key) + 2 > max_len:
                 max_len = len(each_key) + 2
 
-        for each_key in self.__function_dict.keys():
-            self.print(f"  %- {max_len}s: %s" % (each_key, self.__function_dict[each_key].description))
+            if self.__function_dict[each_key].group not in group_list:
+                group_list.append(self.__function_dict[each_key].group)
+
+        for each_group in group_list:
+            # hide hidden group if not in debug mode.
+            if each_group == self.__cmd_group_hidden and not self.DEBUG_MODE:
+                continue
+
+            # don't print default group name.
+            if each_group != default_group:
+                self.print("[%s]" % (each_group))
+
+            # print commands.
+            for each_key in self.__function_dict.keys():
+                if self.__function_dict[each_key].group == each_group:
+                    self.print(f"  %- {max_len}s: %s" % (each_key, self.__function_dict[each_key].description))
         return True
 
     def __reg_table(self, args):
