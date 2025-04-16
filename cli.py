@@ -155,6 +155,7 @@ class CommandLineInterface:
         self.__history_path = f"./.{promote}_history.log"
 
         ### Function Configs ###
+        self.regist_cmd("lock", self.__lock, "Lock the command line.")
         self.regist_cmd("exit", self.__exit, "Exit the program")
         self.regist_cmd("help", self.__help, "Print help")
         self.regist_cmd("history", self.__hist, "Print history")
@@ -536,6 +537,37 @@ class CommandLineInterface:
         # self.print(self.__history_list)
         dbg_debug('line_buffer-'+line_buffer+'-')
         return line_buffer
+    def __lock(self, args):
+        dbg_info('Command line locked.')
+        lock_password = '00112233'
+        if args['#'] == 1:
+            lock_password = args['1']
+        enter_buffer = ''
+        while True:
+            if enter_buffer is not '':
+                dbg_info(f'Enter Password: "{enter_buffer}"')
+            enter_buffer = input()
+
+            if len(enter_buffer) >= len(lock_password) and enter_buffer[-8:] == lock_password:
+                break
+
+        return True
+    def __lock_bak(self, args):
+        dbg_info('Command line locked.')
+        lock_password = '00112233'
+        if args['#'] == 1:
+            lock_password = args['1']
+        enter_buffer = ''
+        while True:
+            if enter_buffer is not '':
+                dbg_info(f'Enter Password: "{enter_buffer}"')
+            key_press = getch()
+            enter_buffer = enter_buffer[-7:] + key_press
+
+            if len(enter_buffer) >= len(lock_password) and enter_buffer[-8:] == lock_password:
+                break
+
+        return True
     def __log_level(self, args):
         if args['#'] == 1:
             DebugSetting.setDbgLevel(args['1'])
