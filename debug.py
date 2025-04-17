@@ -157,8 +157,7 @@ def dbg_print(*args, log_file="./debug.log", show=True, **kwargs):
     :param log_file: The file to write the logs to (default: "log.txt").
     :param kwargs: Additional keyword arguments for the built-in print function.
     """
-    # print('Debug level:', DebugSetting.debug_level)
-    timestamp = strftime("%d-%H:%M", gmtime())
+    timestamp = datetime.today().strftime("%d-%H:%M")
     caller_frame = inspect.stack()[2]
 
     caller_filename = os.path.splitext(os.path.basename(caller_frame.filename))[0]
