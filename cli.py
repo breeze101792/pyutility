@@ -355,7 +355,17 @@ class CommandLineInterface:
         print("\r"+self.__promote+line_buffer, end='', flush=True)
         while self.__flag_running == True:
             pkey_timestatmp = ckey_timestatmp
-            key_press = getch()
+            # key_press = getch()
+            try:
+                key_press = getch()
+            except KeyboardInterrupt:
+                key_press = chr(0x03)
+            except Exception as e:
+                dbg_error(e)
+            
+                traceback_output = traceback.format_exc()
+                dbg_error(traceback_output)
+                raise e
             ckey_timestatmp=time.time()
 
             # for skip following keys
@@ -396,7 +406,7 @@ class CommandLineInterface:
                 pkey_press=""
                 history_idx=0
                 buffer_cusor_idx=0
-                print()
+                print('^c')
                 self.__print_line_buffer(line_buffer, buffer_cusor_idx)
                 continue
             elif key_press == chr(0x7f):
@@ -544,7 +554,7 @@ class CommandLineInterface:
             lock_password = args['1']
         enter_buffer = ''
         while True:
-            if enter_buffer is not '':
+            if enter_buffer != '':
                 dbg_info(f'Enter Password: "{enter_buffer}"')
             enter_buffer = input()
 
@@ -559,7 +569,7 @@ class CommandLineInterface:
             lock_password = args['1']
         enter_buffer = ''
         while True:
-            if enter_buffer is not '':
+            if enter_buffer != '':
                 dbg_info(f'Enter Password: "{enter_buffer}"')
             key_press = getch()
             enter_buffer = enter_buffer[-7:] + key_press
