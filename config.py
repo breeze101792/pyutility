@@ -9,18 +9,18 @@ try:
 except:
     from debug import *
 
-class AppConfig:
-    # Read only variable
-    config_file = "./config.json"
+class BasicConfig:
     log_level = "Information"
-    def __init__(self):
-        _args = {}
-    # class _args:
-    #     clip_mode = ''
     class about:
-        program_name = 'Config Manager'
+        program_name = 'ConfigManager'
         version='0.1.0'
+    class path:
+        root = os.path.expanduser(f"~/.config/ConfigManager")
+        config = "config.json"
+        data = "data"
+        log = "log"
 
+    # Function
     def get_args(self) -> str:
         """Getter for args"""
         return self._name
@@ -34,6 +34,9 @@ class AppConfig:
 class ConfigManager:
     def __init__(self, config):
         self.config = config
+
+        # some config could be seeting here.
+        # self.config.set_config(self.config, 'testconfig')
     def _dump(self, instance, indent=''):
         indent_unit = 2 * ' '
         title_width = 20 - len(indent)
@@ -73,9 +76,31 @@ class ConfigManager:
         return tmp_json
 
     def save(self):
-        dbg_info('Saving config file: {}'.format(self.config.config_file))
-        with open(self.config.config_file, 'w') as configfile:
-            configfile.write(self.toJson().__str__())
+        # Construct the full path
+        config_file = os.path.expanduser(os.path.join(self.config.path.root, self.config.path.config))
+        dbg_debug('Saving config file to: {}'.format(config_file))
+
+        # Ensure the target directory exists
+        try:
+            config_dir = os.path.dirname(config_file)
+            if not os.path.isdir(config_dir):
+                dbg_info(f"Config directory not found, creating: {config_dir}")
+                os.makedirs(config_dir, exist_ok=True)
+        except OSError as e:
+            # Handle potential errors during directory creation (e.g., permissions)
+            dbg_error(f"Error creating directory {config_dir}: {e}")
+            traceback.print_exc()
+            # Optionally re-raise the exception or return if saving is critical
+            return # Or raise e
+
+        # Write the config file
+        try:
+            with open(config_file, 'w') as configfile:
+                configfile.write(self.toJson().__str__())
+        except IOError as e:
+            dbg_error(f"Error writing config file {config_file}: {e}")
+            traceback.print_exc()
+            # Optionally re-raise
     def _loadDict(self, instance, cfg_dict):
         for each_key in cfg_dict.keys():
             if type(cfg_dict[each_key]).__name__ == 'str':
@@ -102,19 +127,77 @@ class ConfigManager:
                 dbg_warning(traceback_output)
     def load(self, config_path=None):
         if config_path is None:
-            config_path = self.config.config_file
+            config_path = os.path.expanduser(self.config.path.root)
+
+        config_file = os.path.join(config_path, self.config.path.config)
+
+        # Check if directory exists
+        if not os.path.isdir(config_path):
+            dbg_info(f"Config directory not found, skipping load: {config_path}")
+            return
+
+        # Check if file exists
+        if not os.path.isfile(config_file):
+            dbg_info(f"Config file not found, skipping load: {config_file}")
+            return
+
+        # Proceed with loading if directory and file exist
         try:
-            with open(config_path, 'r') as configfile:
-                dbg_info('load config file from: {}'.format(config_path))
+            with open(config_file, 'r') as configfile:
+                dbg_debug('Loading config file from: {}'.format(config_file))
                 cfg_buffer = configfile.read()
                 tmp_json = json.loads(cfg_buffer)
                 self.loadDict(tmp_json)
+        # Keep specific FileNotFoundError for clarity, though covered by isfile check
+        except FileNotFoundError:
+             # This case should ideally not be reached due to the isfile check above,
+             # but kept for robustness against race conditions or unexpected issues.
+            dbg_warning(f"Config file disappeared unexpectedly: {config_file}")
+        except json.JSONDecodeError as e:
+            dbg_error(f"Error decoding JSON from config file {config_file}: {e}")
+            traceback.print_exc()
         except Exception as e:
-            dbg_error(e)
-            traceback_output = traceback.format_exc()
-            dbg_error(traceback_output)
+            dbg_error(f"An unexpected error occurred during config load from {config_file}: {e}")
+            traceback.print_exc()
 
-    # def get(self, key: str, default: Optional[Any] = None) -> Any:
+    def get_path(self, key: str, default = None):
+        """
+        Retrieves a path configuration value by key from the 'path' section,
+        joins it with the root path, and returns the full path.
+
+        Args:
+            key (str): The key for the path variable within config.path (e.g., 'data', 'log').
+            default: The value to return if the key is not found. Defaults to None.
+
+        Returns:
+            str or default: The full, joined path, or the default value if the key is not found.
+        """
+        path_config = self.config.path
+        if hasattr(path_config, key):
+            path_value = getattr(path_config, key)
+
+            # Check if the retrieved value is a string
+            if isinstance(path_value, str):
+                # Check if the path value is absolute or contains a '/' (interpreted as full path)
+                if os.path.isabs(path_value) or '/' in path_value:
+                    dbg_debug(f"Path key '{key}' value '{path_value}' is absolute or contains '/'. Returning directly.")
+                    return os.path.expanduser(path_value)
+                else:
+                    # It's considered a relative path, try to join with root
+                    root_path = os.path.expanduser(path_config.root)
+                    if isinstance(root_path, str):
+                        return os.path.join(root_path, path_value)
+                    else:
+                        dbg_warning(f"Cannot join paths: root='{root_path}' (type: {type(root_path)}) is not a string for relative path key='{key}' value='{path_value}'")
+                        return default
+            else:
+                # Value associated with key is not a string
+                dbg_warning(f"Path key '{key}' value '{path_value}' (type: {type(path_value)}) is not a string.")
+                return default
+        else:
+            # Key not found in path_config
+            dbg_info(f"Path key '{key}' not found in config.path section.")
+            return default
     def get(self, key: str, default = None):
         """
         Support getting values via dot notation, e.g., 'audio.volume'
@@ -149,7 +232,8 @@ class ConfigManager:
 
 
 if __name__ == "__main__":
-    cm = ConfigManager(AppConfig)
+    # python -m utility.config
+    cm = ConfigManager(BasicConfig)
     cm.config.about.program_name = 'Clip Test Program.'
     print("## Dump Config")
     cm.dump() 
@@ -157,6 +241,9 @@ if __name__ == "__main__":
     print("## Getting Info with dot.")
     print(f"program_name : {cm.config.about.program_name}")
     print(f"version      : {cm.config.about.version}")
+    print(f"root         : {cm.get_path('root')}")
+    print(f"data         : {cm.get_path('data')}")
+    print(f"log          : {cm.get_path('log')}")
     print("")
 
     print("## Set Info with function.")

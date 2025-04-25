@@ -42,10 +42,10 @@ class RetValue:
 
 # test funcion could sync all ins
 class DebugSetting(object):
-
-    log_path = "./log"
-    debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING
-    debug_tag = "Warning"
+    # default set to None to avoid file write to not init location.
+    log_path = None
+    debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFOMATION
+    debug_tag = "Information"
 
     # @property
     # def debug_level(self):
@@ -58,7 +58,7 @@ class DebugSetting(object):
     #     type(self)._debug_level = val
     @staticmethod
     def setDbgPath(log_path):
-        self.log_path = log_path
+        DebugSetting.log_path = log_path
 
     @staticmethod
     def setDbgLevel(dbg_level):
