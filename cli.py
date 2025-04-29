@@ -554,12 +554,19 @@ class CommandLineInterface:
             lock_password = args['1']
         enter_buffer = ''
         while True:
-            if enter_buffer != '':
-                dbg_info(f'Enter Password: "{enter_buffer}"')
-            enter_buffer = input()
+            try:
+                enter_buffer = input("[Locked] Enter unlock key$ ")
 
-            if len(enter_buffer) >= len(lock_password) and enter_buffer[-8:] == lock_password:
-                break
+                if len(enter_buffer) >= len(lock_password) and enter_buffer[-8:] == lock_password:
+                    break
+            except KeyboardInterrupt:
+                print("")
+                continue
+            except Exception as e:
+                print(e)
+            
+                traceback_output = traceback.format_exc()
+                print(traceback_output)
 
         return True
     def __lock_bak(self, args):
