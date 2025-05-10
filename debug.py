@@ -58,10 +58,24 @@ class DebugSetting(object):
     #     type(self)._debug_level = val
     @staticmethod
     def setDbgPath(log_path):
+        """
+        Sets the base directory for log files.
+
+        :param log_path: The path to the directory where log files will be stored.
+        """
         DebugSetting.log_path = log_path
 
     @staticmethod
     def setDbgLevel(dbg_level):
+        """
+        Sets the debug level for the application.
+
+        :param dbg_level: A string representing the desired debug level.
+                          Possible values include "all", "default", "development",
+                          "Disable", "Critical", "Error", "Warning", "Information",
+                          "Debug", "Trace", or their lowercase equivalents.
+        :return: True if the debug level was set successfully, False otherwise.
+        """
         dbg_info(dbg_level)
 
         if "all"    == dbg_level:
@@ -105,14 +119,21 @@ class DebugSetting(object):
             return False
 
         DebugSetting.debug_tag = dbg_level
-        # print('Debug level:', DebugSetting.debug_level)
         return True
 
     @staticmethod
     def getDbgTag():
+        """
+        Gets the current debug tag, which corresponds to the set debug level.
+
+        :return: A string representing the current debug tag.
+        """
         return DebugSetting.debug_tag
     @staticmethod
     def dbg_show():
+        """
+        Prints a sample message for each debug level to demonstrate current settings.
+        """
         dbg_trace('trace')
         dbg_debug('debug')
         dbg_info('info')
@@ -120,36 +141,88 @@ class DebugSetting(object):
         dbg_error('error')
         dbg_critical('critical')
 
+def dbg_log(*args, **kwargs):
+    """
+    Prints a log message if LOG level is enabled.
+    Log messages are typically for general application activity.
 
-# print(DebugSetting._debug_level)
-# DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.INFOMATION
-# TODO REMOVE this var
-# DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.INFOMATION
-# DebugSetting.debug_level = DebugLevel.MAX
-def dbg_log(*args):
-    dbg_print(Bcolors.OKGREEN, "[LOG] ", *args, Bcolors.ENDC, log_file='journal.log', show=DebugSetting.debug_level & DebugLevel.LOG > 0)
-def dbg_trace(*args):
+    :param args: Messages to be logged.
+    :param kwargs: Additional keyword arguments for the underlying dbg_print function.
+    """
+    dbg_print(Bcolors.OKGREEN, "[LOG] ", *args, Bcolors.ENDC, log_file='journal.log', show=DebugSetting.debug_level & DebugLevel.LOG > 0, **kwargs)
+def dbg_trace(*args, **kwargs):
+    """
+    Prints a trace message if TRACE level is enabled.
+    Trace messages are for detailed execution flow, often used for fine-grained debugging.
+
+    :param args: Messages to be logged.
+    :param kwargs: Additional keyword arguments for the underlying dbg_print function.
+    """
     if DebugSetting.debug_level & DebugLevel.TRACE > 0:
-        dbg_print(Bcolors.TRACE, "[TRC] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.TRACE > 0)
-def dbg_debug(*args):
+        dbg_print(Bcolors.TRACE, "[TRC] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.TRACE > 0, **kwargs)
+def dbg_debug(*args, **kwargs):
+    """
+    Prints a debug message if DEBUG level is enabled.
+    Debug messages are for development-time troubleshooting.
+
+    :param args: Messages to be logged.
+    :param kwargs: Additional keyword arguments for the underlying dbg_print function.
+    """
     if DebugSetting.debug_level & DebugLevel.DEBUG > 0:
-        dbg_print(Bcolors.ENDC, "[DBG] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.DEBUG > 0)
-def dbg_info(*args):
+        dbg_print(Bcolors.ENDC, "[DBG] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.DEBUG > 0, **kwargs)
+def dbg_info(*args, **kwargs):
+    """
+    Prints an informational message if INFORMATION level is enabled.
+    Info messages are for general application progress and status.
+
+    :param args: Messages to be logged.
+    :param kwargs: Additional keyword arguments for the underlying dbg_print function.
+    """
     if DebugSetting.debug_level & DebugLevel.INFOMATION > 0:
-        dbg_print(Bcolors.OKGREEN, "[INF] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.INFOMATION > 0)
-def dbg_warning(*args):
+        dbg_print(Bcolors.OKGREEN, "[INF] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.INFOMATION > 0, **kwargs)
+def dbg_warning(*args, **kwargs):
+    """
+    Prints a warning message if WARNING level is enabled.
+    Warning messages indicate potential issues or unexpected situations.
+
+    :param args: Messages to be logged.
+    :param kwargs: Additional keyword arguments for the underlying dbg_print function.
+    """
     if DebugSetting.debug_level & DebugLevel.WARNING > 0:
-        dbg_print(Bcolors.WARNING, "[WARN] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.WARNING > 0)
-def dbg_error(*args):
+        dbg_print(Bcolors.WARNING, "[WARN] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.WARNING > 0, **kwargs)
+def dbg_error(*args, **kwargs):
+    """
+    Prints an error message if ERROR level is enabled.
+    Error messages indicate problems that prevent normal operation.
+
+    :param args: Messages to be logged.
+    :param kwargs: Additional keyword arguments for the underlying dbg_print function.
+    """
     if DebugSetting.debug_level & DebugLevel.ERROR > 0:
-        dbg_print(Bcolors.ERROR, "[ERR] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.ERROR > 0)
-def dbg_critical(*args):
+        dbg_print(Bcolors.ERROR, "[ERR] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.ERROR > 0, **kwargs)
+def dbg_critical(*args, **kwargs):
+    """
+    Prints a critical message if CRITICAL level is enabled.
+    Critical messages indicate severe errors that may lead to application termination.
+
+    :param args: Messages to be logged.
+    :param kwargs: Additional keyword arguments for the underlying dbg_print function.
+    """
     if DebugSetting.debug_level & DebugLevel.CRITICAL > 0:
-        dbg_print(Bcolors.BOLD, Bcolors.CRITICAL, "[CRIT] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.CRITICAL > 0)
+        dbg_print(Bcolors.BOLD, Bcolors.CRITICAL, "[CRIT] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.CRITICAL > 0, **kwargs)
 
 def dbgprint(*args):
+    """
+    A compatibility wrapper for dbg_print.
+    This function is intended for backward compatibility with older code
+    that might have used `dbgprint` directly. It's recommended to use
+    the level-specific functions (dbg_info, dbg_error, etc.) or dbg_print directly.
+
+    :param args: Arguments to be passed to dbg_print.
+    """
+    # this is for compatibility.
     dbg_print(*args)
-def dbg_print(*args, log_file="./debug.log", show=True, **kwargs):
+def dbg_print(*args, log_file="./debug.log", show=True, prefix='', postfix='', **kwargs):
     """
     Custom print function that prints to the console and writes to a log file.
 
@@ -164,7 +237,7 @@ def dbg_print(*args, log_file="./debug.log", show=True, **kwargs):
     caller_function = caller_frame.function
     caller_line_no = caller_frame.lineno
 
-    message = "[{}][{}][{}][{}]".format(timestamp, caller_filename, caller_function, caller_line_no) + "".join(map(str,args))
+    message = "{}[{}][{}][{}][{}]{}".format(prefix, timestamp, caller_filename, caller_function, caller_line_no, postfix) + "".join(map(str,args))
 
     if show is True:
         # Print to console
