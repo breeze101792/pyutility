@@ -62,6 +62,7 @@ class ArgParser:
         # def_key_prefix='arg_'
         def_key_prefix=ArgParser.CMD_ARG_PREFIX
         def_key_num_arg='#'
+        def_key_all_arg='@'
         def_key_idx=0
         # dbg_trace(args)
         arg_dict=dict()
@@ -81,6 +82,7 @@ class ArgParser:
                 def_key_idx=def_key_idx+1
             arg_cnt += 1
         arg_dict[def_key_prefix+def_key_num_arg.__str__()] = arg_cnt
+        arg_dict[def_key_prefix+def_key_all_arg.__str__()] = pattern
         # print(arg_dict)
         return arg_dict
 
@@ -276,6 +278,13 @@ class CommandLineInterface:
         while self.__flag_running == True:
             try:
                 line_buffer=self.get_line()
+
+                # check ! and replace with history
+                if len(line_buffer) >= 2 and line_buffer.startswith('!') and line_buffer[1:].isdigit():
+                    hist_idx = int(line_buffer[1:])
+                    if hist_idx <= len(self.__history_list):
+                        line_buffer = self.__history_list[hist_idx]
+
                 cmd_token=line_buffer.split(' ')
 
                 if self.__mode == 1:
