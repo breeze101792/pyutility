@@ -32,11 +32,16 @@ class BasicConfig:
         self._name = value
 
 class ConfigManager:
-    def __init__(self, config):
+    def __init__(self, config, config_file = None):
+
         self.config = config
 
-        # some config could be seeting here.
-        # self.config.set_config(self.config, 'testconfig')
+        if config_file is not None:
+            self.load(config_file=config_file)
+
+        # some config could be seeting here. before load, please use save=False
+        # or your may orverwrite config file.
+        # self.config.set_config(self.config, 'testconfig', save=False)
     def _dump(self, instance, indent=''):
         indent_unit = 2 * ' '
         title_width = 20 - len(indent)
@@ -110,13 +115,12 @@ class ConfigManager:
                 # self._loadDict(getattr(instance, each_key) ,cfg_dict[each_key])
                 self._loadDict(instance.__dict__[each_key] ,cfg_dict[each_key])
     def loadDict(self, cfg_dict):
-        # dbg_print(self.dump())
         for each_key in cfg_dict.keys():
             try:
                 if type(cfg_dict[each_key]).__name__ == 'str':
                     continue
                 elif type(cfg_dict[each_key]).__name__ == 'dict':
-                    # dbg_print(each_key, ', ', getattr(self.config, each_key))
+                    dbg_debug(each_key, ', ', getattr(self.config, each_key))
                     tmp_ins = self.config.__dict__[each_key]
 
                     self._loadDict(tmp_ins, cfg_dict[each_key])
@@ -125,16 +129,19 @@ class ConfigManager:
 
                 traceback_output = traceback.format_exc()
                 dbg_warning(traceback_output)
-    def load(self, config_path=None):
+    def load(self, config_file = None, config_path=None):
+        # path
         if config_path is None:
-            config_path = os.path.expanduser(self.config.path.root)
+            config_path = self.config.path.root
+        config_path = os.path.expanduser(config_path)
 
-        config_file = os.path.join(config_path, self.config.path.config)
+        # file.
+        if config_file is not None:
+            config_file = config_file
+        else:
+            config_file = os.path.join(config_path, self.config.path.config)
 
-        # Check if directory exists
-        if not os.path.isdir(config_path):
-            dbg_info(f"Config directory not found, skipping load: {config_path}")
-            return
+        config_file = os.path.expanduser(config_file)
 
         # Check if file exists
         if not os.path.isfile(config_file):
@@ -144,9 +151,10 @@ class ConfigManager:
         # Proceed with loading if directory and file exist
         try:
             with open(config_file, 'r') as configfile:
-                dbg_debug('Loading config file from: {}'.format(config_file))
+                dbg_info('Loading config file from: {}'.format(config_file))
                 cfg_buffer = configfile.read()
                 tmp_json = json.loads(cfg_buffer)
+                dbg_debug(f"Load json: {tmp_json}")
                 self.loadDict(tmp_json)
         # Keep specific FileNotFoundError for clarity, though covered by isfile check
         except FileNotFoundError:
@@ -178,8 +186,8 @@ class ConfigManager:
 
             # Check if the retrieved value is a string
             if isinstance(path_value, str):
-                # Check if the path value is absolute or contains a '/' (interpreted as full path)
-                if os.path.isabs(path_value) or '/' in path_value:
+                # Check if the path value is absolute or start with '/' and '.' (interpreted as full path)
+                if os.path.isabs(path_value) or '/' == path_value[0] or '.' == path_value[0] :
                     dbg_debug(f"Path key '{key}' value '{path_value}' is absolute or contains '/'. Returning directly.")
                     return os.path.expanduser(path_value)
                 else:
@@ -211,10 +219,11 @@ class ConfigManager:
                 return default
         return obj
 
-    def set(self, key: str, value) -> None:
+    def set(self, key: str, value, save = True) -> None:
         """
         Support setting values via dot notation, e.g., 'audio.volume'
         """
+        dbg_debug(f"Set '{key}' to '{value}', svae:{save}")
         parts = key.split(".")
         obj = self.config
         for part in parts[:-1]:
@@ -225,7 +234,8 @@ class ConfigManager:
         final_key = parts[-1]
         if hasattr(obj, final_key):
             setattr(obj, final_key, value)
-            self.save()
+            if save is True:
+                self.save()
         else:
             raise AttributeError(f"Invalid config field: {final_key}")
 
