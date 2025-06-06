@@ -3,6 +3,7 @@ from time import gmtime, strftime
 from datetime import datetime
 import inspect
 import os
+import threading
 
 # black        0;30     Dark Gray     1;30
 # Red          0;31     Light Red     1;31
@@ -237,7 +238,11 @@ def dbg_print(*args, log_file="./debug.log", show=True, prefix='', postfix='', *
     caller_function = caller_frame.function
     caller_line_no = caller_frame.lineno
 
-    message = "{}[{}][{}][{}][{}]{}".format(prefix, timestamp, caller_filename, caller_function, caller_line_no, postfix) + "".join(map(str,args))
+    # we print only last 3 digits.
+    pid = os.getpid()
+    tid = threading.get_ident()
+
+    message = "{}[{}][{}:{}][{}][{}][{}]{}".format(prefix, timestamp, "{:03d}".format(pid % 1000), "{:03d}".format(tid % 1000), caller_filename, caller_function, caller_line_no, postfix) + "".join(map(str,args))
 
     if show is True:
         # Print to console
