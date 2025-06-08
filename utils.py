@@ -94,6 +94,28 @@ class _GetchWindows:
         import msvcrt
         return msvcrt.getch()
 # public api
+def format_bytes(size):
+    """Converts bytes to a human-readable format (KB, MB, GB, etc.), handling negative values."""
+    if size is None:
+        return "N/A"
+    if size == 0:
+        return "0 B" # Handle zero case explicitly
+
+    sign = "-" if size < 0 else ""
+    size = abs(size)
+
+    # Define the units and their corresponding byte values
+    power = 2**10 # 1024
+    n = 0
+    power_labels = {0 : 'B', 1: 'KB', 2: 'MB', 3: 'GB', 4: 'TB'} # Start label with 'B'
+
+    # Find the appropriate unit
+    while size >= power and n < len(power_labels) - 1:
+        size /= power
+        n += 1
+
+    # Format the output, adding the sign back if needed
+    return f"{sign}{size:.2f} {power_labels[n]}"
 def colorPrint(print_string, color = "w", end="\n"):
     print(print_string, end=end)
 def printfun(it, s='', e='\n'):
