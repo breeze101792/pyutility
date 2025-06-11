@@ -1,3 +1,6 @@
+import threading
+from datetime import datetime
+
 # private
 def save_list(data, filename):
     """Save a list to a plain text file, one item per line."""
@@ -116,6 +119,34 @@ def format_bytes(size):
 
     # Format the output, adding the sign back if needed
     return f"{sign}{size:.2f} {power_labels[n]}"
+
+def sleep_with_flag(timeout: float, flag: threading.Event):
+    # print(f"Sleeping for up to {timeout} seconds...")
+    # This will block up to `timeout` seconds, or return early if flag is set
+    interrupted = flag.wait(timeout)
+    if interrupted:
+        print("Sleep interrupted by flag!")
+        return -1
+    # print("Sleep completed.")
+def sleep_until_with_flag(target_time: datetime, flag: threading.Event):
+    # print(f"Sleeping for up to {target_time} seconds...")
+    # This will block up to `target_time` seconds, or return early if flag is set
+    now = datetime.now()
+    delta = (target_time - now).total_seconds()
+    interrupted = flag.wait(delta)
+    if interrupted:
+        print("Sleep interrupted by flag!")
+        return -1
+    # print("Sleep completed.")
+
+def sleep_until(target_time: datetime):
+    now = datetime.now()
+    delta = (target_time - now).total_seconds()
+    if delta > 0:
+        time.sleep(delta)
+    else:
+        print("Target time already passed.")
+
 def colorPrint(print_string, color = "w", end="\n"):
     print(print_string, end=end)
 def printfun(it, s='', e='\n'):
