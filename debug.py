@@ -31,7 +31,7 @@ class DebugLevel:
     CRITICAL   = 0x1
     ERROR      = 0x2
     WARNING    = 0x4
-    INFOMATION = 0x8
+    INFORMATION = 0x8
     DEBUG      = 0x10
     TRACE      = 0x20
     LOG        = 0x40
@@ -45,8 +45,8 @@ class RetValue:
 class DebugSetting(object):
     # default set to None to avoid file write to not init location.
     log_path = None
-    debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFOMATION
-    debug_tag = "Information"
+    debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFORMATION
+    debug_tag = "default"
 
     # @property
     # def debug_level(self):
@@ -82,9 +82,9 @@ class DebugSetting(object):
         if "all"    == dbg_level:
             DebugSetting.debug_level = DebugLevel.MAX
         elif "default" == dbg_level:
-            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFORMATION
         elif "develoment" == dbg_level:
-            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.DEBUG | DebugLevel.INFOMATION
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFORMATION | DebugLevel.DEBUG 
 
         elif "Disable"    == dbg_level:
             DebugSetting.debug_level = DebugLevel.DISABLE
@@ -95,11 +95,11 @@ class DebugSetting(object):
         elif "Warning"    == dbg_level:
             DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING
         elif "Information" == dbg_level:
-            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFOMATION
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFORMATION
         elif "Debug"      == dbg_level:
-            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFOMATION | DebugLevel.DEBUG
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFORMATION | DebugLevel.DEBUG
         elif "Trace"      == dbg_level:
-            DebugSetting.debug_level = DebugLevel.TRACE
+            DebugSetting.debug_level = DebugLevel.CRITICAL | DebugLevel.ERROR | DebugLevel.WARNING | DebugLevel.INFORMATION | DebugLevel.DEBUG | DebugLevel.TRACE
 
         elif "disable"    == dbg_level:
             DebugSetting.debug_level = DebugLevel.DISABLE
@@ -110,7 +110,7 @@ class DebugSetting(object):
         elif "warning"    == dbg_level:
             DebugSetting.debug_level |= DebugLevel.WARNING
         elif "information" == dbg_level:
-            DebugSetting.debug_level |= DebugLevel.INFOMATION
+            DebugSetting.debug_level |= DebugLevel.INFORMATION
         elif "debug"      == dbg_level:
             DebugSetting.debug_level |= DebugLevel.DEBUG
         elif "trace"      == dbg_level:
@@ -179,8 +179,8 @@ def dbg_info(*args, **kwargs):
     :param args: Messages to be logged.
     :param kwargs: Additional keyword arguments for the underlying dbg_print function.
     """
-    if DebugSetting.debug_level & DebugLevel.INFOMATION > 0:
-        dbg_print(Bcolors.OKGREEN, "[INF] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.INFOMATION > 0, **kwargs)
+    if DebugSetting.debug_level & DebugLevel.INFORMATION > 0:
+        dbg_print(Bcolors.OKGREEN, "[INF] ", *args, Bcolors.ENDC, log_file='debug.log', show=DebugSetting.debug_level & DebugLevel.INFORMATION > 0, **kwargs)
 def dbg_warning(*args, **kwargs):
     """
     Prints a warning message if WARNING level is enabled.

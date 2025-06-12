@@ -161,7 +161,7 @@ class CommandLineInterface:
         self.regist_cmd("exit", self.__exit, "Exit the program")
         self.regist_cmd("help", self.__help, "Print help")
         self.regist_cmd("history", self.__hist, "Print history")
-        self.regist_cmd("log", self.__log_level, "Setting log level. (all, disable, default.)", arg_list=["all", 'default', 'develoment', "disable", "critical", "error", "warning", "infomation", "debug", "trace", "max"])
+        self.regist_cmd("log", self.__log_level, "Setting log level. (all, disable, default.)", arg_list=["all", 'default', 'develoment', "disable", "critical", "error", "warning", "information", "debug", "trace", "max"])
 
         # debug mode.
         self.regist_cmd("debug", self.__set_debug_mode, "Set debug mode.(on, off)", arg_list=["on", "off"])
