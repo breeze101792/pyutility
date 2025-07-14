@@ -15,11 +15,11 @@ class uDatabase:
         self.__cursor = None
     def __lock(self):
         # to avoid eary return, use 10 secounds timeout.
-        dbg_info("Try to get mutex.")
+        # dbg_info("Try to get mutex.")
         acquired = self.__db_lock.acquire(timeout=uDatabase.LOCK_TIMEOUT)
         return acquired
     def __unlock(self):
-        dbg_info('Release mutex ')
+        # dbg_info('Release mutex ')
         try:
             self.__db_lock.release()
         except RuntimeError:
