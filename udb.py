@@ -1,34 +1,29 @@
 import sqlite3
 import os
 import time
+import threading
 import traceback
 from utility.debug import *
 
 class uDatabase:
-    __db_lock = False
+    LOCK_TIMEOUT=10
+    __db_lock = threading.Lock()
     def __init__(self, db_path='udb.db'):
         dbg_trace("Create database instance")
         self.__db_path=db_path
         self.__db_connection = None
         self.__cursor = None
     def __lock(self):
-        timeout_cnt=1000
-        # dbg_debug('Get mutex ', self.__db_lock)
-        while self.__db_lock is True:
-            time.sleep(0.05)
-            dbg_trace("Try to get mutex.")
-            if timeout_cnt == 0:
-                return False
-            else:
-                timeout_cnt -= 1
-
-        self.__db_lock = True
-        return True
+        # to avoid eary return, use 10 secounds timeout.
+        dbg_info("Try to get mutex.")
+        acquired = self.__db_lock.acquire(timeout=uDatabase.LOCK_TIMEOUT)
+        return acquired
     def __unlock(self):
-        # dbg_debug('Release mutex ', self.__db_lock)
-        if self.__db_lock is False:
-            dbg_warning("Mutex is not locking")
-        self.__db_lock = False
+        dbg_info('Release mutex ')
+        try:
+            self.__db_lock.release()
+        except RuntimeError:
+            dbg_warning("Mutex is not locked")
         return True
 
     def setup_tables(self):
@@ -113,17 +108,23 @@ class uDatabase:
             else:
                 result = result.fetchall()
             dbg_debug(result)
+        except sqlite3.OperationalError as e:
+            dbg_error("Query String: ", query_str)
+            dbg_error("Previous commit may need to commit out before the next one. Exception: ", e)
+
+            traceback_output = traceback.format_exc()
+            dbg_error(traceback_output)
+            raise
         except Exception as e:
+            dbg_error("Query String: ", query_str)
+            dbg_error("Exception: ", e)
+
+            traceback_output = traceback.format_exc()
+            dbg_error(traceback_output)
+            raise
+        finally:
             self.__unlock()
 
-            dbg_error("Query String: ", query_str)
-            # dbg_error("Exception: ", e)
-            #
-            # traceback_output = traceback.format_exc()
-            # dbg_error(traceback_output)
-            raise
-
-        self.__unlock()
         return result
 
     def dump_db(self):
