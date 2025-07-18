@@ -57,32 +57,45 @@ class ArgParser:
 
     @staticmethod
     def args_parser(args):
+        """
+        Parses a string of arguments into a dictionary.
+        Arguments can be in the format 'key:value' or just 'value'.
+        Positional arguments are stored with keys 'arg_0', 'arg_1', etc.
+        A special key '#' stores the count of positional arguments.
+        """
 
         # print (args)
         # def_key_prefix='arg_'
         def_key_prefix=ArgParser.CMD_ARG_PREFIX
         def_key_num_arg='#'
         def_key_all_arg='@'
+        def_key_seperator='='
         def_key_idx=0
         # dbg_trace(args)
         arg_dict=dict()
         pattern = re.compile(r'''((?:[^\s"']|"[^"]*"|'[^']*')+)''')
+        arg_list = []
 
         arg_cnt = -1
 
         for each_arg in pattern.split(args):
             if each_arg == '' or each_arg == " ":
                 continue
-            tmp_list=each_arg.split(":")
+            arg_list.append(each_arg)
 
-            if len(tmp_list) == 2:
-                arg_dict[tmp_list[0]] = tmp_list[1].replace("'", '').replace("\"", '')
-            elif len(tmp_list) == 1:
-                arg_dict[def_key_prefix+def_key_idx.__str__()] = tmp_list[0].replace("'", '').replace("\"", '')
+            tmp_list=each_arg.split(def_key_seperator)
+
+            if len(tmp_list) == 1:
+                # add num:value
+                arg_dict[def_key_prefix+def_key_idx.__str__()] = each_arg.replace("'", '').replace("\"", '')
                 def_key_idx=def_key_idx+1
-            arg_cnt += 1
+                arg_cnt += 1
+            elif len(tmp_list) == 2:
+                # add key:value
+                arg_dict[tmp_list[0]] = tmp_list[1].replace("'", '').replace("\"", '')
+
         arg_dict[def_key_prefix+def_key_num_arg.__str__()] = arg_cnt
-        arg_dict[def_key_prefix+def_key_all_arg.__str__()] = pattern
+        arg_dict[def_key_prefix+def_key_all_arg.__str__()] = arg_list
         # print(arg_dict)
         return arg_dict
 
@@ -132,7 +145,7 @@ class CommandInstance:
 
 class CommandLineInterface:
     DEBUG_MODE = False
-    def __init__(self, promote="cli"):
+    def __init__(self, promote="cli", wellcome_message = ""):
         #### def vars ###
         self.__cmd_group_hidden="hidden"
 
@@ -140,6 +153,7 @@ class CommandLineInterface:
         self.__promote=promote + "> "
         self.__cmd_promote=promote + "$ "
         self.__one_command_keyword=":"
+        self.__wellcome_message=wellcome_message
 
         #### control vars ###
         self.__flag_running = True
@@ -275,6 +289,8 @@ class CommandLineInterface:
     def run(self):
         func_ret = None
         self.load_history()
+        if self.__wellcome_message != "":
+            self.print(self.__wellcome_message)
         while self.__flag_running == True:
             try:
                 line_buffer=self.get_line()
