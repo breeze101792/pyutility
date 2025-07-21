@@ -145,7 +145,7 @@ class CommandInstance:
 
 class CommandLineInterface:
     DEBUG_MODE = False
-    def __init__(self, promote="cli", wellcome_message = ""):
+    def __init__(self, promote="cli", wellcome_message = "", on_exit = None):
         #### def vars ###
         self.__cmd_group_hidden="hidden"
 
@@ -291,6 +291,8 @@ class CommandLineInterface:
         self.load_history()
         if self.__wellcome_message != "":
             self.print(self.__wellcome_message)
+
+        self.on_enter()
         while self.__flag_running == True:
             try:
                 line_buffer=self.get_line()
@@ -630,8 +632,19 @@ class CommandLineInterface:
         self.print("Default Function")
         return True
 
-    def __exit(self, args):
+    def on_enter(self):
+        pass
+    def on_exit(self):
         self.print("Exit program")
+
+    def __exit(self, args):
+        try:
+            self.on_exit()
+        except Exception as e:
+            print(e)
+        
+            traceback_output = traceback.format_exc()
+            print(traceback_output)
         self.__flag_running = False
         return True
     def __hist(self, args):
