@@ -231,7 +231,7 @@ def dbg_print(*args, log_file="./debug.log", show=True, prefix='', postfix='', *
     :param log_file: The file to write the logs to (default: "log.txt").
     :param kwargs: Additional keyword arguments for the built-in print function.
     """
-    timestamp = datetime.today().strftime("%d-%H:%M")
+    timestamp = datetime.today().strftime("%y%m%d-%H%M")
     caller_frame = inspect.stack()[2]
 
     caller_filename = os.path.splitext(os.path.basename(caller_frame.filename))[0]

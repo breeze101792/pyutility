@@ -8,19 +8,19 @@ class ParallelProcessorManager:
     A class to perform parallel processing of a list of items using multiprocessing.
     """
 
-    def __init__(self, analyze_func, num_processes=4, process_chunk_by_chunk=False, debug_mode=False):
+    def __init__(self, analyze_func, num_workers=4, process_chunk_by_chunk=False, debug_mode=False):
         """
         Initializes the ParallelProcessor.
 
         Args:
             analyze_func (callable): The function to apply to each item or a chunk of items.
-            num_processes (int): The number of processes to use for parallelization.
+            num_workers (int): The number of processes to use for parallelization.
             process_chunk_by_chunk (bool): If True, analyze_func will receive a list (chunk) of items.
                                            If False, analyze_func will receive items one by one.
             debug_mode (bool): If True, print debug messages during processing.
         """
         self.analyze_func = analyze_func
-        self.num_processes = num_processes
+        self.num_workers = num_workers
         self.process_chunk_by_chunk = process_chunk_by_chunk
         self.debug_mode = debug_mode
 
@@ -58,17 +58,17 @@ class ParallelProcessorManager:
             list: A list of processed results, merged in order.
         """
         if self.debug_mode:
-            print(f"Debug: Starting parallel processing of {len(items)} items with {self.num_processes} processes.")
+            print(f"Debug: Starting parallel processing of {len(items)} items with {self.num_workers} processes.")
         if not items:
             if self.debug_mode:
                 print("Debug: No items to process. Returning empty list.")
             return []
 
-        chunk_size = (len(items) + self.num_processes - 1) // self.num_processes
+        chunk_size = (len(items) + self.num_workers - 1) // self.num_workers
         chunks = [items[i:i + chunk_size] for i in range(0, len(items), chunk_size)]
 
         manager = multiprocessing.Manager()
-        return_dict = manager.dict()
+        results_dict = manager.dict()
         processes = []
 
         for idx, chunk in enumerate(chunks):
@@ -76,7 +76,7 @@ class ParallelProcessorManager:
                 print(f"Debug: Starting process for chunk {idx} (size: {len(chunk)})")
             p = multiprocessing.Process(
                 target=ParallelProcessor._process_chunk,
-                args=(chunk, return_dict, idx, self.analyze_func, self.process_chunk_by_chunk, self.debug_mode)
+                args=(chunk, results_dict, idx, self.analyze_func, self.process_chunk_by_chunk, self.debug_mode)
             )
             p.start()
             processes.append(p)
@@ -87,31 +87,31 @@ class ParallelProcessorManager:
         # Merge results in order
         merged_result = []
         for idx in range(len(chunks)):
-            merged_result.extend(return_dict[idx])
+            merged_result.extend(results_dict[idx])
 
         if self.debug_mode:
-            print("Debug: Parallel processing finished. Merged results.")
+            print(f"Debug: Parallel processing finished. Merged results({len(results_dict.items())}).")
         return merged_result
 
 # Queue
 class ParallelProcessorQueue:
-    def __init__(self, analyze_func, num_processes=4, process_chunk_by_chunk=False, debug_mode=False):
+    def __init__(self, analyze_func, num_workers=4, process_chunk_by_chunk=False, debug_mode=False):
         self.analyze_func = analyze_func
-        self.num_processes = num_processes
+        self.num_workers = num_workers
         self.process_chunk_by_chunk = process_chunk_by_chunk
         self.debug_mode = debug_mode
 
     def process(self, items):
         """Main parallel processing function."""
         if self.debug_mode:
-            print(f"Debug: Starting parallel processing of {len(items)} items with {self.num_processes} processes.")
+            print(f"Debug: Starting parallel processing of {len(items)} items with {self.num_workers} processes.")
 
         if not items:
             if self.debug_mode:
                 print("Debug: No items to process. Returning empty list.")
             return []
 
-        chunk_size = (len(items) + self.num_processes - 1) // self.num_processes
+        chunk_size = (len(items) + self.num_workers - 1) // self.num_workers
         chunks = [items[i:i + chunk_size] for i in range(0, len(items), chunk_size)]
 
         queue = multiprocessing.Queue()
@@ -138,6 +138,7 @@ class ParallelProcessorQueue:
 
         if self.debug_mode:
             print(f"Debug: Starting process join.")
+
         for p in processes:
             p.join()
 
@@ -147,7 +148,7 @@ class ParallelProcessorQueue:
             merged_result.extend(results_dict[idx])
 
         if self.debug_mode:
-            print("Debug: Parallel processing finished. Merged results.")
+            print(f"Debug: Parallel processing finished. Merged results({len(results_dict.items())}).")
         return merged_result
 
     @staticmethod
@@ -165,17 +166,17 @@ class ParallelProcessorQueue:
 
 
 # Threading.
-class ParallelProcessor:
-    def __init__(self, analyze_func, num_threads=4, process_chunk_by_chunk=False, debug_mode=False):
+class ParallelProcessorThread:
+    def __init__(self, analyze_func, num_workers=4, process_chunk_by_chunk=False, debug_mode=False):
         self.analyze_func = analyze_func
-        self.num_threads = num_threads
+        self.num_workers = num_workers
         self.process_chunk_by_chunk = process_chunk_by_chunk
         self.debug_mode = debug_mode
 
     def process(self, items):
         """Main parallel processing function."""
         if self.debug_mode:
-            print(f"Debug: Starting parallel processing of {len(items)} items with {self.num_threads} threads.")
+            print(f"Debug: Starting parallel processing of {len(items)} items with {self.num_workers} threads.")
 
         if not items:
             if self.debug_mode:
@@ -183,12 +184,12 @@ class ParallelProcessor:
             return []
 
         # Split items into chunks
-        chunk_size = (len(items) + self.num_threads - 1) // self.num_threads
+        chunk_size = (len(items) + self.num_workers - 1) // self.num_workers
         chunks = [items[i:i + chunk_size] for i in range(0, len(items), chunk_size)]
 
         results_dict = {}
 
-        with ThreadPoolExecutor(max_workers=self.num_threads) as executor:
+        with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
             futures = {}
             for idx, chunk in enumerate(chunks):
                 if self.debug_mode:
@@ -209,7 +210,7 @@ class ParallelProcessor:
             merged_result.extend(results_dict[idx])
 
         if self.debug_mode:
-            print("Debug: Parallel processing finished. Merged results.")
+            print(f"Debug: Parallel processing finished. Merged results({len(results_dict.items())}).")
         return merged_result
 
     @staticmethod
@@ -225,6 +226,8 @@ class ParallelProcessor:
 
         return index, result
 
+
+ParallelProcessor = ParallelProcessorQueue
 
 # === Usage example ===
 def analyze(item):
@@ -246,7 +249,7 @@ if __name__ == "__main__":
 
     print("--- Processing items one by one (default mode, debug enabled) ---")
     # Create an instance of the ParallelProcessor for item-by-item processing with debug mode enabled
-    processor_item_by_item = ParallelProcessor(analyze_func=analyze, num_processes=8, debug_mode=True)
+    processor_item_by_item = ParallelProcessor(analyze_func=analyze, num_workers=8, debug_mode=True)
     results_item_by_item = processor_item_by_item.process(item_list)
 
     print(f"Processed {len(results_item_by_item)} items.")
@@ -254,7 +257,7 @@ if __name__ == "__main__":
 
     print("\n--- Processing chunks (debug disabled) ---")
     # Create an instance of the ParallelProcessor for chunk processing with debug mode disabled
-    processor_chunk = ParallelProcessor(analyze_func=analyze_chunk, num_processes=8, process_chunk_by_chunk=True, debug_mode=False)
+    processor_chunk = ParallelProcessor(analyze_func=analyze_chunk, num_workers=8, process_chunk_by_chunk=True, debug_mode=False)
     results_chunk = processor_chunk.process(item_list)
 
     print(f"Processed {len(results_chunk)} items.")
