@@ -41,11 +41,16 @@ class ParallelProcessorManager:
         if debug_mode:
             print(f"Debug: Process {multiprocessing.current_process().name} starting chunk {index} (size: {len(chunk)})")
 
-        if process_chunk_by_chunk:
-            result = analyze_func(chunk)
-        else:
-            result = [analyze_func(item) for item in chunk]
-        return_list[index] = result
+        try:
+            if process_chunk_by_chunk:
+                result = analyze_func(chunk)
+            else:
+                result = [analyze_func(item) for item in chunk]
+            return_list[index] = result
+        except Exception as e:
+            if debug_mode:
+                print(f"Debug: Error processing chunk {index} in process {multiprocessing.current_process().name}: {e}")
+            return_list[index] = [] # Return empty list for the failed chunk
 
     def process(self, items):
         """
@@ -157,12 +162,16 @@ class ParallelProcessorQueue:
         if debug_mode:
             print(f"Debug: Process {multiprocessing.current_process().name} starting chunk {index} (size: {len(chunk)})")
 
-        if process_chunk_by_chunk:
-            result = analyze_func(chunk)
-        else:
-            result = [analyze_func(item) for item in chunk]
-
-        queue.put((index, result))
+        try:
+            if process_chunk_by_chunk:
+                result = analyze_func(chunk)
+            else:
+                result = [analyze_func(item) for item in chunk]
+            queue.put((index, result))
+        except Exception as e:
+            if debug_mode:
+                print(f"Debug: Error processing chunk {index} in process {multiprocessing.current_process().name}: {e}")
+            queue.put((index, [])) # Return empty list for the failed chunk
 
 
 # Threading.
@@ -219,12 +228,16 @@ class ParallelProcessorThread:
         if debug_mode:
             print(f"Debug: Thread starting chunk {index} (size: {len(chunk)})")
 
-        if process_chunk_by_chunk:
-            result = analyze_func(chunk)
-        else:
-            result = [analyze_func(item) for item in chunk]
-
-        return index, result
+        try:
+            if process_chunk_by_chunk:
+                result = analyze_func(chunk)
+            else:
+                result = [analyze_func(item) for item in chunk]
+            return index, result
+        except Exception as e:
+            if debug_mode:
+                print(f"Debug: Error processing chunk {index} in thread: {e}")
+            return index, [] # Return empty list for the failed chunk
 
 
 ParallelProcessor = ParallelProcessorQueue
