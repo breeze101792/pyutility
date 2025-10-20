@@ -623,7 +623,7 @@ class CommandLineInterface:
                 CommandLineInterface.DEBUG_MODE = True
                 self.vprint("debug mode enabled.")
                 return True
-            elif args['1'] == 'on':
+            elif args['1'] == 'off':
                 CommandLineInterface.DEBUG_MODE = False
                 return True
         return False
