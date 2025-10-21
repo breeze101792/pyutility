@@ -10,7 +10,7 @@ except:
     from debug import *
 
 class BasicConfig:
-    log_level = "Information"
+    # log_level = "Information"
     class about:
         program_name = 'ConfigManager'
         version='0.1.0'
@@ -19,6 +19,13 @@ class BasicConfig:
         config = "config.json"
         data = "data"
         log = "log"
+    class variable:
+        # share variable for instance, this will not be saved.
+        pass
+
+    # Persistant config, Add conig on other class.
+    # class config:
+    #     pass
 
     # Function
     def get_args(self) -> str:
@@ -35,6 +42,7 @@ class ConfigManager:
     def __init__(self, config, config_file = None):
 
         self.config = config
+        self.internal_config_list = ['about', 'path', 'variable']
 
         if config_file is not None:
             self.load(config_file=config_file)
@@ -101,19 +109,29 @@ class ConfigManager:
         # Write the config file
         try:
             with open(config_file, 'w') as configfile:
-                configfile.write(self.toJson().__str__())
+                config_dict = self.toDict()
+                for each_internal_config in self.internal_config_list:
+                    if each_internal_config in config_dict:
+                        del config_dict[each_internal_config]
+                configfile.write(json.dumps(config_dict, indent=2))
         except IOError as e:
             dbg_error(f"Error writing config file {config_file}: {e}")
             traceback.print_exc()
             # Optionally re-raise
     def _loadDict(self, instance, cfg_dict):
         for each_key in cfg_dict.keys():
-            if type(cfg_dict[each_key]).__name__ == 'str':
-                # self.config.__dict__[each_key] = cfg_dict[each_key]
-                setattr(instance, each_key, cfg_dict[each_key])
-            elif type(cfg_dict[each_key]).__name__ == 'dict':
-                # self._loadDict(getattr(instance, each_key) ,cfg_dict[each_key])
-                self._loadDict(instance.__dict__[each_key] ,cfg_dict[each_key])
+            try:
+                if type(cfg_dict[each_key]).__name__ == 'str':
+                    # self.config.__dict__[each_key] = cfg_dict[each_key]
+                    setattr(instance, each_key, cfg_dict[each_key])
+                elif type(cfg_dict[each_key]).__name__ == 'dict':
+                    # self._loadDict(getattr(instance, each_key) ,cfg_dict[each_key])
+                    self._loadDict(instance.__dict__[each_key] ,cfg_dict[each_key])
+            except Exception as e:
+                dbg_warning(e)
+
+                traceback_output = traceback.format_exc()
+                dbg_warning(traceback_output)
     def loadDict(self, cfg_dict):
         for each_key in cfg_dict.keys():
             try:
@@ -225,6 +243,10 @@ class ConfigManager:
         """
         dbg_debug(f"Set '{key}' to '{value}', svae:{save}")
         parts = key.split(".")
+        # chek if it's instance config, then we don't need to save it.
+        if len(parts) != 0 and parts[0] in self.internal_config_list:
+            save = False
+
         obj = self.config
         for part in parts[:-1]:
             if hasattr(obj, part):
@@ -238,8 +260,10 @@ class ConfigManager:
                 self.save()
         else:
             raise AttributeError(f"Invalid config field: {final_key}")
-
-
+    def dump(self, args = None) -> bool:
+        # this is for command line use.
+        print(self.toJson())
+        return True
 
 if __name__ == "__main__":
     # python -m utility.config

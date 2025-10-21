@@ -27,6 +27,7 @@ class uDatabase:
         return True
 
     def setup_tables(self):
+        dbg_warning("Please impl setup_tables.")
         # NOTE. Impl your table here.
         return True
 

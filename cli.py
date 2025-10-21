@@ -147,7 +147,7 @@ class CommandLineInterface:
     DEBUG_MODE = False
     def __init__(self, promote="cli", wellcome_message = "", on_exit = None):
         #### def vars ###
-        self.__cmd_group_hidden="hidden"
+        self.debug_group="debug"
 
         #### config vars ###
         self.__promote=promote + "> "
@@ -179,7 +179,7 @@ class CommandLineInterface:
 
         # debug mode.
         self.regist_cmd("debug", self.__set_debug_mode, "Set debug mode.(on, off)", arg_list=["on", "off"])
-        self.regist_cmd("reg_table", self.__reg_table, "Dump registered command table.", group=self.__cmd_group_hidden)
+        self.regist_cmd("reg_table", self.__reg_table, "Dump registered command table.", group=self.debug_group)
 
     @staticmethod
     def vprint(*args, end="\n"):
@@ -226,6 +226,9 @@ class CommandLineInterface:
 
     def save_history(self):
         if self.__history_path is not None:
+            history_dir = os.path.dirname(self.__history_path)
+            if history_dir and not os.path.exists(history_dir):
+                os.makedirs(history_dir, exist_ok=True)
             save_list(self.__history_list, self.__history_path)
             dbg_trace(f"Save history to {self.__history_path}.")
 
@@ -667,7 +670,7 @@ class CommandLineInterface:
 
         for each_group in group_list:
             # hide hidden group if not in debug mode.
-            if each_group == self.__cmd_group_hidden and not self.DEBUG_MODE:
+            if each_group == self.debug_group and not self.DEBUG_MODE:
                 continue
 
             # don't print default group name.
