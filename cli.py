@@ -145,26 +145,33 @@ class CommandInstance:
 
 class CommandLineInterface:
     DEBUG_MODE = False
-    def __init__(self, promote="cli", wellcome_message = "", on_exit = None):
+    def __init__(self, promote=None, wellcome_message = "", on_exit = None):
         #### def vars ###
         self.debug_group="debug"
 
         #### config vars ###
-        self.__promote=promote + "> "
-        self.__cmd_promote=promote + "$ "
+        # FIXME, maybe we don't need to use >/$ by default.
+        # we should let the user to decide.
+        self.__prompt = promote + "> "
+        self.__cmd_prompt=promote + "$ "
         self.__one_command_keyword=":"
         self.__wellcome_message=wellcome_message
 
         #### control vars ###
         self.__flag_running = True
+        ## use default command for all.
         # self.__flag_one_command = True
         self.__flag_one_command = False
+
 
         ### local vars ###
         self.__history_list = []
         self.__function_dict = dict()
         self.__auto_match = True
         self.__default_ptr = self.__default
+        # mode
+        # 0: normal mode
+        # 1: command mode
         self.__mode = 0
 
         ### path vars ###
@@ -181,6 +188,13 @@ class CommandLineInterface:
         self.regist_cmd("debug", self.__set_debug_mode, "Set debug mode.(on, off)", arg_list=["on", "off"])
         self.regist_cmd("reg_table", self.__reg_table, "Dump registered command table.", group=self.debug_group)
 
+    def set_prompt(self, prompt = None, cmd_prompt = None):
+        if prompt is not None:
+            self.__prompt = prompt
+
+        if cmd_prompt is not None:
+            self.__cmd_prompt = cmd_prompt
+
     @staticmethod
     def vprint(*args, end="\n"):
         if CommandLineInterface.DEBUG_MODE is True:
@@ -195,14 +209,14 @@ class CommandLineInterface:
         print('\x1bc')
     def __print_line_buffer(self, line_buffer, cursor_shift_idx):
         columns, rows = os.get_terminal_size(0)
-        trailing_space_nmu=columns - len("\r"+self.__promote+line_buffer)
+        trailing_space_nmu=columns - len("\r"+self.__prompt + line_buffer)
 
         # \033[ is csi
         if self.__mode == 1:
-            print("\033[1K\r"+self.__cmd_promote+line_buffer+trailing_space_nmu*" ", end="", flush=True)
+            print("\033[1K\r"+self.__cmd_prompt+line_buffer+trailing_space_nmu*" ", end="", flush=True)
             print("\033[%dD" % (cursor_shift_idx + trailing_space_nmu), end="", flush=True)
         else:
-            print("\033[1K\r"+self.__promote+line_buffer+trailing_space_nmu*" ", end="", flush=True)
+            print("\033[1K\r"+self.__prompt + line_buffer+trailing_space_nmu*" ", end="", flush=True)
             print("\033[%dD" % (cursor_shift_idx + trailing_space_nmu), end="", flush=True)
 
     @property
@@ -283,11 +297,49 @@ class CommandLineInterface:
         dbg_error("Cmd not found. ", line_buffer)
         # func_ret = self.__default_ptr(arg_dict)
         return func_ret
-    def run_once(self, line_args):
-        dbg_error("Exception: ")
-        func_ret = self.run_once_cmd(line_args)
-        if func_ret is False:
-            return self.run_once_def(line_args)
+
+    def run_once(self):
+        func_ret = None
+        self.load_history()
+        if self.__wellcome_message != "":
+            self.print(self.__wellcome_message)
+
+        self.on_enter()
+        try:
+            line_buffer=self.get_line()
+
+            # check ! and replace with history
+            if len(line_buffer) >= 2 and line_buffer.startswith('!') and line_buffer[1:].isdigit():
+                hist_idx = int(line_buffer[1:])
+                if hist_idx <= len(self.__history_list):
+                    line_buffer = self.__history_list[hist_idx]
+
+            cmd_token=line_buffer.split(' ')
+
+            if self.__mode == 1:
+                # if cmd_token[0][0] == self.__one_command_keyword:
+                if len(line_buffer) != 0:
+                    dbg_info('One Command Mode')
+                    func_ret = self.run_once_cmd(line_buffer)
+                else:
+                    # dbg_debug('line_buffer->' , line_buffer)
+                    func_ret = self.run_once_def(line_buffer)
+            else:
+                if self.__flag_one_command is True:
+                    func_ret = self.run_once_def(line_buffer)
+                else:
+                    func_ret = self.run_once_cmd(line_buffer)
+
+            # if func_ret is not True:
+            #     self.print('Fail to excute command. Return:', func_ret)
+        except Exception as e:
+            dbg_error("Cmd: ", line_buffer)
+            dbg_error("Exception: ", e)
+
+            traceback_output = traceback.format_exc()
+            dbg_error(traceback_output)
+        self.save_history()
+        return func_ret
 
     def run(self):
         func_ret = None
@@ -382,7 +434,7 @@ class CommandLineInterface:
         history_idx=0
         buffer_cusor_idx=0
 
-        print("\r"+self.__promote+line_buffer, end='', flush=True)
+        print("\r"+self.__prompt + line_buffer, end='', flush=True)
         while self.__flag_running == True:
             pkey_timestatmp = ckey_timestatmp
             # key_press = getch()
@@ -414,6 +466,12 @@ class CommandLineInterface:
                     dbg_trace("Double Esc Key")
                     esc_dectect=False
                     self.__mode = 0
+
+                    # NOTE, try to clear and exit.
+                    line_buffer = ""
+                    buffer_cusor_idx=0
+                    self.__print_line_buffer(line_buffer, buffer_cusor_idx)
+                    break
                 else:
                     esc_dectect=True
                 # dbg_debug("Esc Key")

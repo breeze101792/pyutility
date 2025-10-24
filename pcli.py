@@ -6,11 +6,12 @@ import io
 import os # Import os module to get terminal size
 
 from .debug import *
+from .cli import CommandLineInterface
 from .utils import getch, save_list, load_list
 
 class PageShareData:
     def __init__(self):
-        self.output_buffer = "" # New attribute to store redirected output
+        pass
 
 class KeyInstance:
     def __init__(self, key_list, func_ptr, description="", arg_list=None, group='default'):
@@ -71,7 +72,7 @@ class PageCommandLineInterface:
         self.__key_delay = 0.01
 
         ### local vars ###
-        self.__function_list = list()
+        self.__function_key_list = list()
         self.__content_handler_ptr = self.def_content_handler
         self.__content_offset = 0 # New: Offset for content display
 
@@ -80,6 +81,9 @@ class PageCommandLineInterface:
         self.command_buffer = ""
         self.key_press_buffer = ""
         self.content_output_buffer = wellcome_message
+
+        self.__command_line = CommandLineInterface(promote = "cmd")
+        self.__command_line.set_prompt(prompt = ":", cmd_prompt = "$")
 
         ### Function Configs ###
         # self.regist_key(["q"], self.exit, "Exit the program")
@@ -113,14 +117,18 @@ class PageCommandLineInterface:
     ## Regs functons
     ##########################
     def regist_key(self, key_list, func_ptr, description="", arg_list=None, group="default"):
-        self.__function_list.append( KeyInstance(key_list=key_list, func_ptr=func_ptr, description=description, arg_list=arg_list, group=group) )
+        self.__function_key_list.append( KeyInstance(key_list=key_list, func_ptr=func_ptr, description=description, arg_list=arg_list, group=group) )
+
+    def regist_cmd(self, key_word, func_ptr, description="", arg_list=None, group="default"):
+        self.__command_line.regist_cmd(key_word, func_ptr, description, group=group)
 
     def regist_content_handler(self, func_ptr):
         self.__content_handler_ptr = func_ptr
 
     ## UI Generation.
     def __ui_print_title(self, title):
-        self.print('\x1bc', end='')
+        # self.print('\x1bc', end='')
+        self.print(f"\033[1;1H", end="")
         self.print("== {} ==".format(title), end='')
 
     def __ui_status_handler(self):
@@ -181,8 +189,20 @@ class PageCommandLineInterface:
         self.__ui_page_render()
 
     def __ui_command_handler(self):
-        # TODO
-        pass
+        # Save current cursor position
+        self.print("\033[s", end="")
+
+        # Get terminal size
+        columns, rows = os.get_terminal_size()
+        # Move cursor to the last line
+        self.print(f"\033[{rows};1H", end="")
+
+        if len(self.command_buffer) != 0:
+            self.print(f"{self.command_buffer}", end = "")
+            # self.print(f"test", end = "")
+
+        # Restore cursor position
+        self.print("\033[u", end="")
     def run(self):
         while True:
 
@@ -213,7 +233,7 @@ class PageCommandLineInterface:
                     break
                 else:
                     try:
-                        for each_func in self.__function_list:
+                        for each_func in self.__function_key_list:
                             if key_press in each_func.key_list:
                                 need_redraw = each_func.func_ptr(key_press = key_press, data = self.share_data)
                                 continue
@@ -242,7 +262,13 @@ class PageCommandLineInterface:
         # Move cursor to the last line
         self.print(f"\033[{rows};1H", end="")
 
-        self.command_buffer = input(":")
+        # Clear the reset of the line.
+        self.print("\033[K", end="")
+
+        # self.command_buffer = input(":")
+        func_ret = self.__command_line.run_once()
+        if func_ret is False:
+            self.command_buffer = f"Execute return fail. {func_ret}"
 
         # Restore cursor position
         self.print("\033[u", end="")
@@ -276,7 +302,7 @@ class PageCommandLineInterface:
     ## Page
     def page_help(self, data = None):
         self.print("Help:")
-        for each_func in self.__function_list:
+        for each_func in self.__function_key_list:
             self.print(f"  {str(each_func.key_list):<16}: {each_func.description}")
         self.print(f"  {str(['q']):<16}: Quit.")
         return True
