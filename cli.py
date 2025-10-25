@@ -298,7 +298,7 @@ class CommandLineInterface:
         # func_ret = self.__default_ptr(arg_dict)
         return func_ret
 
-    def run_once(self):
+    def run_once(self, prefix = ""):
         func_ret = None
         self.load_history()
         if self.__wellcome_message != "":
@@ -306,7 +306,7 @@ class CommandLineInterface:
 
         self.on_enter()
         try:
-            line_buffer=self.get_line()
+            line_buffer = self.get_line(prefix = prefix)
 
             # check ! and replace with history
             if len(line_buffer) >= 2 and line_buffer.startswith('!') and line_buffer[1:].isdigit():
@@ -420,13 +420,13 @@ class CommandLineInterface:
         # print(candict_list)
         return candict_list
 
-    def get_line(self):
+    def get_line(self, prefix = ""):
         self.__mode=0
         ckey_timestatmp=time.time()
         pkey_timestatmp=time.time()
         key_timeout=50.0
 
-        line_buffer=""
+        line_buffer=prefix
         line_bakup_buffer=""
         esc_dectect=False
         pkey_press=""

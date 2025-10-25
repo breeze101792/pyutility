@@ -82,8 +82,8 @@ class PageCommandLineInterface:
         self.key_press_buffer = ""
         self.content_output_buffer = wellcome_message
 
-        self.__command_line = CommandLineInterface(promote = "cmd")
-        self.__command_line.set_prompt(prompt = ":", cmd_prompt = "$")
+        self.command_line = CommandLineInterface(promote = "cmd")
+        self.command_line.set_prompt(prompt = ":", cmd_prompt = "$")
 
         ### Function Configs ###
         # self.regist_key(["q"], self.exit, "Exit the program")
@@ -99,8 +99,13 @@ class PageCommandLineInterface:
     @staticmethod
     def print(*args, end="\n"):
         print("".join(map(str,args)), end=end, flush=True)
-    def __cls(self):
+    def cls(self):
         print('\x1bc')
+    def set_cursor_visibility(self, visible):
+        if visible:
+            self.print("\033[?25h", end="")  # Show cursor
+        else:
+            self.print("\033[?25l", end="")  # Hide cursor
     def __print_line_buffer(self, line_buffer, cursor_shift_idx):
         columns, rows = os.get_terminal_size(0)
         trailing_space_nmu=columns - len("\r"+self.__promote+line_buffer)
@@ -120,7 +125,7 @@ class PageCommandLineInterface:
         self.__function_key_list.append( KeyInstance(key_list=key_list, func_ptr=func_ptr, description=description, arg_list=arg_list, group=group) )
 
     def regist_cmd(self, key_word, func_ptr, description="", arg_list=None, group="default"):
-        self.__command_line.regist_cmd(key_word, func_ptr, description, group=group)
+        self.command_line.regist_cmd(key_word, func_ptr, description, group=group)
 
     def regist_content_handler(self, func_ptr):
         self.__content_handler_ptr = func_ptr
@@ -139,7 +144,7 @@ class PageCommandLineInterface:
         columns, rows = os.get_terminal_size()
         # Move cursor to the last line
         self.print(f"\033[{rows - 1 };1H", end="")
-        self.print("Enter a key(q:Exit, j:Next, k:Previous, :: command mode.):")
+        self.print("Enter a key(q Exit, : command mode, ? Toggle help):")
         # Restore cursor position
         self.print("\033[u", end="")
 
@@ -180,6 +185,7 @@ class PageCommandLineInterface:
         ## Content
         if self.flag_show_help:
             self.page_help()
+            self.flag_show_help = False
         else:
             self.__content_handler_ptr()
 
@@ -199,51 +205,62 @@ class PageCommandLineInterface:
 
         if len(self.command_buffer) != 0:
             self.print(f"{self.command_buffer}", end = "")
-            # self.print(f"test", end = "")
+            self.command_buffer = f""
 
         # Restore cursor position
         self.print("\033[u", end="")
     def run(self):
         while True:
+            try:
+                # reset terminal and cls
+                self.cls()
+                self.set_cursor_visibility(False)
 
-            # cls
-            self.__cls()
-            self.__ui_print_title(self.__title)
-            self.__ui_page_handler()
-            self.__ui_status_handler()
-            self.__ui_command_handler()
+                self.__ui_print_title(self.__title)
+                self.__ui_page_handler()
+                self.__ui_status_handler()
+                self.__ui_command_handler()
 
-            self.share_data.flag_redraw = False
+                self.share_data.flag_redraw = False
 
-            # reset variables
-            self.key_press_buffer = ""
-            need_redraw = False
-            while not need_redraw:
+                # reset variables
+                self.key_press_buffer = ""
+                need_redraw = False
+                while not need_redraw:
 
-                key_press = getch()
-                time.sleep(self.__key_delay)
+                    key_press = getch()
+                    time.sleep(self.__key_delay)
 
-                if key_press in ("q") or key_press == chr(0x04):
-                    # ctrl + d
-                    self.__cls()
-                    self.exit()
-                    return True
-                elif key_press in ("r") or key_press == chr(0x0c):
-                    # ctrl + l and refresh
-                    break
-                else:
-                    try:
-                        for each_func in self.__function_key_list:
-                            if key_press in each_func.key_list:
-                                need_redraw = each_func.func_ptr(key_press = key_press, data = self.share_data)
-                                continue
-                    except Exception as e:
-                        self.print(e)
+                    if key_press in ("q") or key_press == chr(0x04):
+                        # ctrl + d
+                        self.cls()
+                        self.exit()
+                        self.set_cursor_visibility(True)
+                        return True
+                    elif key_press in ("r") or key_press == chr(0x0c):
+                        # ctrl + l and refresh
+                        break
+                    else:
+                        try:
+                            for each_func in self.__function_key_list:
+                                if key_press in each_func.key_list:
+                                    need_redraw = each_func.func_ptr(key_press = key_press, data = self.share_data)
+                                    continue
+                        except Exception as e:
+                            self.print(e)
 
-                        traceback_output = traceback.format_exc()
-                        self.print(traceback_output)
-            # record key_press.
-            self.key_press_buffer = key_press
+                            traceback_output = traceback.format_exc()
+                            self.print(traceback_output)
+                # record key_press.
+                self.key_press_buffer = key_press
+            except Exception as e:
+                dbg_error(e)
+
+                traceback_output = traceback.format_exc()
+                dbg_error(traceback_output)
+            # finally:
+            #     pass
+        self.set_cursor_visibility(True)
         return True
 
     ## Build-in functions
@@ -256,6 +273,7 @@ class PageCommandLineInterface:
     def key_cmd(self, key_press, data = None):
         # Save current cursor position
         self.print("\033[s", end="")
+        self.set_cursor_visibility(True)
 
         # Get terminal size
         columns, rows = os.get_terminal_size()
@@ -266,12 +284,13 @@ class PageCommandLineInterface:
         self.print("\033[K", end="")
 
         # self.command_buffer = input(":")
-        func_ret = self.__command_line.run_once()
+        func_ret = self.command_line.run_once()
         if func_ret is False:
             self.command_buffer = f"Execute return fail. {func_ret}"
 
         # Restore cursor position
         self.print("\033[u", end="")
+        self.set_cursor_visibility(False)
 
         return True
     def key_move_ud(self, key_press, data = None):
