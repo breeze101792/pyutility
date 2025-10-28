@@ -234,11 +234,13 @@ class PageCommandLineInterface:
                     if key_press in ("q") or key_press == chr(0x04):
                         # ctrl + d
                         self.cls()
-                        self.exit()
+                        self.exit(data = self.share_data)
                         self.set_cursor_visibility(True)
                         return True
                     elif key_press in ("r") or key_press == chr(0x0c):
                         # ctrl + l and refresh
+                        self.refresh(data = self.share_data)
+                        need_redraw = True
                         break
                     else:
                         try:
@@ -311,6 +313,8 @@ class PageCommandLineInterface:
                 self.__content_offset = 0
         return True
 
+    def refresh(self, data = None):
+        return True
     def exit(self, data = None):
         return True
 
