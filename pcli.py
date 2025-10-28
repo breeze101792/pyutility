@@ -185,7 +185,7 @@ class PageCommandLineInterface:
         ## Content
         if self.flag_show_help:
             self.page_help()
-            self.flag_show_help = False
+            # self.flag_show_help = False
         else:
             self.__content_handler_ptr()
 
