@@ -14,13 +14,11 @@ class PageShareData:
         pass
 
 class KeyInstance:
-    def __init__(self, key_list, func_ptr, description="", arg_list=None, group='default'):
-        # key_list, func_ptr, description="", arg_list=l
+    def __init__(self, key_list, func_ptr, description="", group='default'):
         self.__key_list    = key_list
         self.__func_ptr    = func_ptr
         self.__description = description
-        # self.__arg_list    = arg_list
-        # self.__group       = group
+        self.__group       = group
 
     @property
     def key_list(self):
@@ -43,19 +41,12 @@ class KeyInstance:
     def description(self,val):
         self.__description = val
 
-    # @property
-    # def arg_list(self):
-    #     return self.__arg_list
-    # @arg_list.setter
-    # def arg_list(self,val):
-    #     self.__arg_list = val
-
-    # @property
-    # def group(self):
-    #     return self.__group
-    # @group.setter
-    # def group(self,val):
-    #     self.__group = val
+    @property
+    def group(self):
+        return self.__group
+    @group.setter
+    def group(self,val):
+        self.__group = val
 
 class PageCommandLineInterface:
 
@@ -70,18 +61,22 @@ class PageCommandLineInterface:
         #### control vars ###
         self.__flag_running = True
         self.__key_delay = 0.01
+        self.__flag_show_help = False
 
         ### local vars ###
         self.__function_key_list = list()
         self.__content_handler_ptr = self.def_content_handler
         self.__content_offset = 0 # New: Offset for content display
+        self.__title_handler_ptr = self.def_title_handler
+        self.__status_handler_ptr = self.def_status_handler
 
+        ### buffers ###
         self.share_data = share_data
-        self.flag_show_help = False
         self.command_buffer = ""
         self.key_press_buffer = ""
         self.content_output_buffer = wellcome_message
 
+        ### instance ###
         self.command_line = CommandLineInterface(promote = "cmd")
         self.command_line.set_prompt(prompt = ":", cmd_prompt = "$")
 
@@ -90,7 +85,6 @@ class PageCommandLineInterface:
         self.regist_key(["?"], self.key_help, "Toggle help display; press '?' again to hide it.")
         self.regist_key([":"], self.key_cmd, "Toggle command mode display; press again to hide it.")
         self.regist_key(["j","k"], self.key_move_ud, "Move content up/down")
-
 
     @staticmethod
     def vprint(*args, end="\n"):
@@ -118,11 +112,10 @@ class PageCommandLineInterface:
             print("\033[1K\r"+self.__promote+line_buffer+trailing_space_nmu*" ", end="", flush=True)
             print("\033[%dD" % (cursor_shift_idx + trailing_space_nmu), end="", flush=True)
 
-
     ## Regs functons
     ##########################
-    def regist_key(self, key_list, func_ptr, description="", arg_list=None, group="default"):
-        self.__function_key_list.append( KeyInstance(key_list=key_list, func_ptr=func_ptr, description=description, arg_list=arg_list, group=group) )
+    def regist_key(self, key_list, func_ptr, description="", group="default"):
+        self.__function_key_list.append( KeyInstance(key_list=key_list, func_ptr=func_ptr, description=description, group=group) )
 
     def regist_cmd(self, key_word, func_ptr, description="", arg_list=None, group="default"):
         self.command_line.regist_cmd(key_word, func_ptr, description, group=group)
@@ -130,11 +123,19 @@ class PageCommandLineInterface:
     def regist_content_handler(self, func_ptr):
         self.__content_handler_ptr = func_ptr
 
+    def regist_title_handler(self, func_ptr):
+        self.__title_handler_ptr = func_ptr
+
+    def regist_status_handler(self, func_ptr):
+        self.__status_handler_ptr = func_ptr
+
     ## UI Generation.
-    def __ui_print_title(self, title):
+    ##########################
+    def __ui_title_handler(self):
         # self.print('\x1bc', end='')
         self.print(f"\033[1;1H", end="")
-        self.print("== {} ==".format(title), end='')
+        title = self.__title_handler_ptr(self.share_data)
+        self.print("{}".format(title), end='')
 
     def __ui_status_handler(self):
         # Save current cursor position
@@ -144,7 +145,14 @@ class PageCommandLineInterface:
         columns, rows = os.get_terminal_size()
         # Move cursor to the last line
         self.print(f"\033[{rows - 1 };1H", end="")
-        self.print("Enter a key(q Exit, : command mode, ? Toggle help):")
+        # self.print("Enter a key(q Exit, : command mode, ? Toggle help):")
+
+        status_left, status_right = self.__status_handler_ptr()
+        # Calculate padding for right alignment
+        padding = columns - len(status_left) - len(status_right)
+        # Print status_left, then padding spaces, then status_right
+        self.print(f"{status_left}{' ' * padding}{status_right}", end="")
+
         # Restore cursor position
         self.print("\033[u", end="")
 
@@ -183,9 +191,9 @@ class PageCommandLineInterface:
         sys.stdout = redirect_buffer
 
         ## Content
-        if self.flag_show_help:
+        if self.__flag_show_help:
             self.page_help()
-            # self.flag_show_help = False
+            # self.__flag_show_help = False
         else:
             self.__content_handler_ptr()
 
@@ -216,7 +224,7 @@ class PageCommandLineInterface:
                 self.cls()
                 self.set_cursor_visibility(False)
 
-                self.__ui_print_title(self.__title)
+                self.__ui_title_handler()
                 self.__ui_page_handler()
                 self.__ui_status_handler()
                 self.__ui_command_handler()
@@ -247,6 +255,9 @@ class PageCommandLineInterface:
                             for each_func in self.__function_key_list:
                                 if key_press in each_func.key_list:
                                     need_redraw = each_func.func_ptr(key_press = key_press, data = self.share_data)
+
+                                    # update status bar.
+                                    self.__ui_status_handler()
                                     continue
                         except Exception as e:
                             self.print(e)
@@ -267,9 +278,37 @@ class PageCommandLineInterface:
 
     ## Build-in functions
     ##########################
-    ## key
+    def refresh(self, data = None):
+        return True
+    def exit(self, data = None):
+        return True
+
+    # default handler
+    def def_content_handler(self, data = None):
+        self.print("|| {} ||".format("Default content handler."))
+        return True
+
+    def def_title_handler(self, data = None):
+        title = "== {} ==".format(self.__title)
+        return title
+
+    def def_status_handler(self, data = None):
+        status_left = "q Exit, : command mode, ? Toggle help"
+        status_right = ""
+        # tupple (left, right)
+        return (status_left,status_right)
+
+    ## Page
+    def page_help(self, data = None):
+        self.print("Help:")
+        for each_func in self.__function_key_list:
+            self.print(f"  {str(each_func.key_list):<16}: {each_func.description}")
+        self.print(f"  {str(['q']):<16}: Quit.")
+        return True
+
+    ## key & command
     def key_help(self, key_press, data = None):
-        self.flag_show_help = not self.flag_show_help
+        self.__flag_show_help = not self.__flag_show_help
         return True
 
     def key_cmd(self, key_press, data = None):
@@ -311,23 +350,6 @@ class PageCommandLineInterface:
             self.__content_offset -= 1
             if self.__content_offset < 0:
                 self.__content_offset = 0
-        return True
-
-    def refresh(self, data = None):
-        return True
-    def exit(self, data = None):
-        return True
-
-    def def_content_handler(self, data = None):
-        self.print("|| {} ||".format("Default content handler."))
-        return True
-
-    ## Page
-    def page_help(self, data = None):
-        self.print("Help:")
-        for each_func in self.__function_key_list:
-            self.print(f"  {str(each_func.key_list):<16}: {each_func.description}")
-        self.print(f"  {str(['q']):<16}: Quit.")
         return True
 
     ##########################
