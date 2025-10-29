@@ -2,6 +2,7 @@
 import time
 import traceback
 import sys
+import re
 import io
 import os # Import os module to get terminal size
 
@@ -147,11 +148,35 @@ class PageCommandLineInterface:
         self.print(f"\033[{rows - 1 };1H", end="")
         # self.print("Enter a key(q Exit, : command mode, ? Toggle help):")
 
-        status_left, status_right = self.__status_handler_ptr()
-        # Calculate padding for right alignment
-        padding = columns - len(status_left) - len(status_right)
-        # Print status_left, then padding spaces, then status_right
-        self.print(f"{status_left}{' ' * padding}{status_right}", end="")
+        status_left, status_middle ,status_right = self.__status_handler_ptr()
+        
+        # Chinese characters take up more space, so we count their occurrences.
+        len_left = len(status_left) + len(re.findall(r'[\u4e00-\u9fff]', status_left))
+        len_middle = len(status_middle) + len(re.findall(r'[\u4e00-\u9fff]', status_middle))
+        len_right = len(status_right) + len(re.findall(r'[\u4e00-\u9fff]', status_right))
+
+        total_text_length = len_left + len_middle + len_right
+
+        # Calculate space for padding between left and middle, and middle and right
+        remaining_space = columns - total_text_length
+
+        # If remaining_space is negative, text is too long. No padding.
+        if remaining_space < 0:
+            remaining_space = 0
+
+        # Distribute remaining_space into two padding sections
+        # Try to center the middle part by distributing space somewhat evenly
+        padding_left_middle = (columns - len_middle) // 2 - len_left
+        padding_middle_right = remaining_space - padding_left_middle
+
+        # Construct the final string
+        output_string = f"{status_left}{' ' * padding_left_middle}{status_middle}{' ' * padding_middle_right}{status_right}"
+
+        # If the output_string is still longer than columns (due to initial text overflow), truncate it.
+        if len(output_string) > columns:
+            output_string = output_string[:columns]
+
+        self.print(output_string, end="")
 
         # Restore cursor position
         self.print("\033[u", end="")
@@ -294,9 +319,10 @@ class PageCommandLineInterface:
 
     def def_status_handler(self, data = None):
         status_left = "q Exit, : command mode, ? Toggle help"
+        status_middle = ""
         status_right = ""
-        # tupple (left, right)
-        return (status_left,status_right)
+        # tupple (left, middle, right)
+        return (status_left,status_middle,status_right)
 
     ## Page
     def page_help(self, data = None):
