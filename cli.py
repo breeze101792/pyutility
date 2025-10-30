@@ -145,7 +145,7 @@ class CommandInstance:
 
 class CommandLineInterface:
     DEBUG_MODE = False
-    def __init__(self, promote=None, wellcome_message = "", on_exit = None):
+    def __init__(self, promote="", wellcome_message = "", on_exit = None):
         #### def vars ###
         self.debug_group="debug"
 
@@ -754,6 +754,20 @@ class CommandLineInterface:
 
 def args_test_function(args):
     CommandLineInterface.print(f"cmd: {args['0']}, nargs:{args['#']}")
+
+    ## named args
+    CommandLineInterface.print(f"\nNamed args")
+    if 'name' in args:
+        CommandLineInterface.print(f"name: {args['name']}")
+    if 'task' in args:
+        CommandLineInterface.print(f"task: {args['task']}")
+    if 'project' in args:
+        CommandLineInterface.print(f"project: {args['project']}")
+    if 'description' in args:
+        CommandLineInterface.print(f"description: {args['description']}")
+
+    ## Unnamed args
+    CommandLineInterface.print(f"\nUnnamed args")
     for each_arg in range(1, args['#'] + 1):
         CommandLineInterface.print(f"arg {each_arg}: {args[each_arg.__str__()]}")
     return True
@@ -762,5 +776,5 @@ if __name__ == '__main__':
 
     debug_level=DebugLevel.MAX
     test_cli = CommandLineInterface()
-    test_cli.regist_cmd("test", args_test_function, description="test function for args", arg_list=['project', 'task', 'name', 'description']  )
+    test_cli.regist_cmd("test", args_test_function, description="test function for args", arg_list=['project', 'task', 'name', 'description', 'normal', 'urgent']  )
     test_cli.run()
