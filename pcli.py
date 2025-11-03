@@ -205,9 +205,11 @@ class PageCommandLineInterface:
             if line_idx < total_content_lines:
                 # Clear the current line and print new content
                 self.print(f"\033[K{content_lines[line_idx]}")
-            else:
-                # Clear the line if there's no more content to fill the display height
-                self.print("\033[K")
+            # we already clear it, so don't need to do it.
+            # it also preventing wrap line issue.
+            # else:
+            #     # Clear the line if there's no more content to fill the display height
+            #     self.print("\033[K")
 
     def __ui_page_handler(self):
         # Redirect stdout to a buffer
