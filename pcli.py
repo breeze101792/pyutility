@@ -119,7 +119,7 @@ class PageCommandLineInterface:
         self.__function_key_list.append( KeyInstance(key_list=key_list, func_ptr=func_ptr, description=description, group=group) )
 
     def regist_cmd(self, key_word, func_ptr, description="", arg_list=None, group="default"):
-        self.command_line.regist_cmd(key_word, func_ptr, description, group=group)
+        self.command_line.regist_cmd(key_word, func_ptr, description, group=group, arg_list = arg_list)
 
     def regist_content_handler(self, func_ptr):
         self.__content_handler_ptr = func_ptr
