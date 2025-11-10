@@ -80,6 +80,7 @@ class PageCommandLineInterface:
         ### instance ###
         self.command_line = CommandLineInterface(promote = "cmd")
         self.command_line.set_prompt(prompt = ":", cmd_prompt = "$")
+        self.command_line.one_line_mode = True
 
         ### Function Configs ###
         # self.regist_key(["q"], self.exit, "Exit the program")
@@ -229,6 +230,9 @@ class PageCommandLineInterface:
         self.content_output_buffer = redirect_buffer.getvalue()
         self.__ui_page_render()
 
+    def status_print(self, *args):
+        self.command_buffer = "".join(map(str,args))
+        self.__ui_command_handler()
     def __ui_command_handler(self):
         # Save current cursor position
         self.print("\033[s", end="")

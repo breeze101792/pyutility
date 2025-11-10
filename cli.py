@@ -162,6 +162,8 @@ class CommandLineInterface:
         ## use default command for all.
         # self.__flag_one_command = True
         self.__flag_one_command = False
+        # TODO, there is log of things need to be done, so far only don't \n on command execuate.
+        self.__flag_one_line_mode = False
 
 
         ### local vars ###
@@ -225,6 +227,13 @@ class CommandLineInterface:
     @one_command.setter
     def one_command(self,val):
         self.__flag_one_command = val
+
+    @property
+    def one_line_mode(self):
+        return self.__flag_one_line_mode
+    @one_line_mode.setter
+    def one_line_mode(self,val):
+        self.__flag_one_line_mode = val
 
     @property
     def history_path(self):
@@ -618,7 +627,8 @@ class CommandLineInterface:
             # normal key press
             if key_press in ("\r", "\n"):
                 # print("Enter")
-                print("\n", end='', flush=True)
+                if self.__flag_one_line_mode is False:
+                    print("\n", end='', flush=True)
                 # self.__mode = 0
                 break
             else:
