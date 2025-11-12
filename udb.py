@@ -60,7 +60,7 @@ class uDatabase:
             self.commit()
         return True
     def connect(self):
-        dbg_trace("Connect to database")
+        dbg_trace(f"Connect to database {self.__db_path}")
         if self.__lock() is False:
             dbg_error("Database get lock fail!")
             return False

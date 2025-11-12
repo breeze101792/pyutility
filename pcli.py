@@ -243,7 +243,7 @@ class PageCommandLineInterface:
         self.print(f"\033[{rows};1H", end="")
 
         if len(self.command_buffer) != 0:
-            self.print(f"{self.command_buffer}", end = "")
+            self.print(f"{self.command_buffer}\033[K", end = "")
             self.command_buffer = f""
 
         # Restore cursor position
