@@ -77,7 +77,7 @@ class DebugSetting(object):
                           "Debug", "Trace", or their lowercase equivalents.
         :return: True if the debug level was set successfully, False otherwise.
         """
-        dbg_info(dbg_level)
+        # dbg_info(dbg_level)
 
         if "all"    == dbg_level:
             DebugSetting.debug_level = DebugLevel.MAX
