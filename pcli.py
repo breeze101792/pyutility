@@ -182,35 +182,83 @@ class PageCommandLineInterface:
         # Restore cursor position
         self.print("\033[u", end="")
 
+    def __get_effective_length(self, text):
+        """
+        Calculates the effective display length of a string, accounting for wide (e.g., CJK) characters
+        and full-width symbols.
+        """
+        # Regex to match full-width characters and common full-width symbols.
+        # This includes CJK characters, full-width Latin characters, and various full-width punctuation.
+        full_width_pattern = r'[\u1100-\u11FF\u2E80-\uA4CF\uAC00-\uD7AF\uF900-\uFAFF\uFE10-\uFE19\uFE30-\uFE6F\uFF00-\uFFEF]'
+        return len(text) + len(re.findall(full_width_pattern, text))
+
     def __ui_page_render(self):
         # columns, rows = os.get_terminal_size()
         columns, rows = os.get_terminal_size()
+        last_line_spacing = 1
         # Calculate display height: total rows - 1 (title) - 1 (status) - 1 (command), leave 1 line before commands.
-        display_height = rows - 3 - 1
+        display_height = rows - 3 - last_line_spacing
 
         content_lines = self.content_output_buffer.splitlines()
         total_content_lines = len(content_lines)
 
         # Adjust offset if it goes out of bounds
+        min_show_lines = 5
         if self.__content_offset < 0:
             self.__content_offset = 0
-        if self.__content_offset > total_content_lines - display_height:
-            self.__content_offset = max(0, total_content_lines - display_height)
+        if self.__content_offset > total_content_lines - min_show_lines:
+            self.__content_offset = max(0, total_content_lines - min_show_lines)
 
         # Move cursor to the start of the content area (line 2)
         self.print(f"\033[2;1H", end="")
 
+        wrap_for_ignore_count = 0
+        content_line_idx = self.__content_offset
+        flag_line_number = False
+        remining_lines = 0
+
         # Print content from the offset
-        for i in range(display_height):
-            line_idx = self.__content_offset + i
-            if line_idx < total_content_lines:
+        for display_line_idx in range(display_height):
+            each_line_content = ""
+
+            # check if outof content line.
+            if content_line_idx < total_content_lines:
+                if flag_line_number:
+                    each_line_content = display_line_idx.__str__() + content_lines[content_line_idx]
+                else:
+                    each_line_content = content_lines[content_line_idx]
+
+                # save current remining lines.
+                remining_lines = display_height - (display_line_idx + wrap_for_ignore_count )
+                # manage the extra line cause by line wrapping
+                char_count = self.__get_effective_length(each_line_content)
+                if char_count > columns:
+                    # +1 is for zero base calc.
+                    # -1 for calc the extra line, so we assume at this 1 char for the line 1.
+                    wrap_for_ignore_count += (char_count + 1 - 1) // columns
+
+                # Calc if it's enough to display.
+                # if display_line_idx + wrap_for_ignore_count + 1 == display_height:
+                #     break
+                if display_line_idx + wrap_for_ignore_count + 1 > display_height:
+                    # fillig up the remaind lines.
+                    if remining_lines > 0:
+                        self.print(f"\033[K{each_line_content[:(remining_lines ) * columns]}")
+                    break
+
                 # Clear the current line and print new content
-                self.print(f"\033[K{content_lines[line_idx]}")
+                self.print(f"\033[K{each_line_content}")
+                content_line_idx += 1
+            else:
+                break
             # we already clear it, so don't need to do it.
             # it also preventing wrap line issue.
             # else:
             #     # Clear the line if there's no more content to fill the display height
             #     self.print("\033[K")
+
+        # for debug use.
+        # self.command_buffer = f"h/w: {display_height}({rows})/{columns},offset: {self.__content_offset}/{content_line_idx}, wrap_cnt:{wrap_for_ignore_count}, remind:{remining_lines}"
 
     def __ui_page_handler(self):
         # Redirect stdout to a buffer
@@ -368,12 +416,14 @@ class PageCommandLineInterface:
         return True
     def key_move_ud(self, key_press, data = None):
         columns, rows = os.get_terminal_size()
-        display_height = rows - 3
+        # display_height = rows - 3
         total_content_lines = len(self.content_output_buffer.splitlines())
 
         # Calculate the maximum allowed offset
         # If content fits on screen, max_offset is 0. Otherwise, it's total_lines - display_height.
-        max_offset = max(0, total_content_lines - display_height)
+        # max_offset = max(0, total_content_lines - display_height)
+        # leave one line to show.
+        max_offset = max(0, total_content_lines - 1)
 
         if key_press == 'j':
             if self.__content_offset < max_offset:
