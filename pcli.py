@@ -280,8 +280,8 @@ class PageCommandLineInterface:
 
     def status_print(self, *args):
         self.command_buffer = "".join(map(str,args))
-        self.__ui_command_handler()
-    def __ui_command_handler(self):
+        self.__ui_command_handler(clear_buffer = False)
+    def __ui_command_handler(self, clear_buffer = True):
         # Save current cursor position
         self.print("\033[s", end="")
 
@@ -292,7 +292,8 @@ class PageCommandLineInterface:
 
         if len(self.command_buffer) != 0:
             self.print(f"{self.command_buffer}\033[K", end = "")
-            self.command_buffer = f""
+            if clear_buffer is True:
+                self.command_buffer = f""
 
         # Restore cursor position
         self.print("\033[u", end="")
