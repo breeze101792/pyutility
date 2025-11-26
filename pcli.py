@@ -278,6 +278,9 @@ class PageCommandLineInterface:
         self.content_output_buffer = redirect_buffer.getvalue()
         self.__ui_page_render()
 
+    def page_reset(self, *args):
+        self.__content_offset = 0
+
     def status_print(self, *args):
         self.command_buffer = "".join(map(str,args))
         self.__ui_command_handler(clear_buffer = False)
